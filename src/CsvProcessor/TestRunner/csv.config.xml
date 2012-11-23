@@ -1,0 +1,73 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<cf-result-viewer xmlns="http://ztt.fh-worms.de/georgieff/text-analytics/">
+  <workflow>
+    <column-definitions>
+      <column name="unit id"/>
+      <column name="created at"/>
+      <column name="golden"/>
+      <column name="id"/>
+      <column name="missed"/>
+      <column name="started at"/>
+      <column name="tainted"/>
+      <column name="channel"/>
+      <column name="trust"/>
+      <column name="worker id"/>
+      <column name="country"/>
+      <column name="region"/>
+      <column name="city"/>
+      <column name="ip"/>
+      <column name="how diificult was the assertion to decide on"/>
+      <column name="your choice"/>
+      <column name="annotated sentence"/>
+      <column name="file"/>
+      <column name="line"/>
+      <column name="pattern"/>
+      <column name="unannotated sentence"/>
+      <column name="x"/>
+      <column name="your coice gold"/>
+      <column name="ys"/>
+    </column-definitions>
+    <read task-name="cvs reader">
+      <file path="..\..\Identify Hyponymous Collections.csv"/>
+      <split char=","/>
+      <quote char='"'/>
+      <meta-quote char='\'/>
+      <trim-whitespace-start value="true"/>
+      <trim-whitespace-end value="true"/>
+    </read>
+    <write task-name="console printer" previous-task="cvs reader">
+      <!-- <file path=""/> --> <!-- default is console -->
+      <column ref="unit id" as=""/>
+      <column ref="created at" as=""/>
+      <column ref="golden id" as=""/>
+      <column ref="missed" as=""/>
+      <column ref="started at" as=""/>
+      <column ref="tainted" as=""/>
+      <column ref="channel" as=""/>
+      <column ref="trust" as=""/>
+      <column ref="worker id" as=""/>
+      <column ref="country" as=""/>
+      <column ref="region" as=""/>
+      <column ref="city" as=""/>
+      <column ref="ip" as=""/>
+      <column ref="how diificult was the assertion to decide on" as=""/>
+      <column ref="your choice" as=""/>
+      <column ref="annotated sentence" as=""/>
+      <column ref="file" as=""/>
+      <column ref="line" as=""/>
+      <column ref="pattern" as=""/>
+      <column ref="unannotated sentence" as=""/>
+      <column ref="x" as=""/>
+      <column ref="your coice gold" as=""/>
+      <column ref="ys" as=""/>
+      <split char="	"/>
+      <quote char='"'/>
+      <meta-quote char='\'/>
+    </write>
+    <!--
+      <filter task-name="cvs filter">
+      
+      </filter>
+    -->
+  </workflow>
+</cf-result-viewer>
