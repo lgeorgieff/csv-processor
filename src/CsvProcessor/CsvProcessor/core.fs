@@ -175,8 +175,8 @@ module public Utilities =
                 indexesOfWhat
             else
                 List.filter(fun(index: int) ->
-                    List.exists(fun((left: int), (right: int)) ->
-                        index < left || index > right) quoteRanges) indexesOfWhat
+                    not(List.exists(fun((left: int), (right: int)) ->
+                            index >= left && index <= right) quoteRanges)) indexesOfWhat
 
         /// <summary>Returns a list of strings that contains the splitted parts of
         /// the string str.</summary>
