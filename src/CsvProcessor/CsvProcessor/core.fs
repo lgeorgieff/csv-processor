@@ -110,15 +110,15 @@ module public Utilities =
     module public IO =
         /// <summary>Reads the entire stream line by line and invokes lineProcessor on each line.
         /// Finally, the entire list of results of lineProcessor is returned.</summary>
-        let rec private readStream(streamReader: StreamReader) (lineProcessor: string -> 't) (accumulator: list<'t>): list<'t> =
+        let rec private readStream(streamReader: StreamReader) (lineProcessor: string -> bool -> 't) (accumulator: list<'t>): list<'t> =
             if not (streamReader.EndOfStream) then
-                readStream streamReader lineProcessor (accumulator @ [lineProcessor(streamReader.ReadLine())])
+                readStream streamReader lineProcessor (accumulator @ [lineProcessor(streamReader.ReadLine()) (List.length accumulator = 0)])
             else
                 accumulator
 
         /// <summary>Reads the entire stream line by line and invokes lineProcessor on each line.
         /// Finally, the entire list of results of lineProcessor is returned.</summary>
-        let public ReadStream(streamReader: StreamReader) (lineProcessor: string -> 't): list<'t> =
+        let public ReadStream(streamReader: StreamReader) (lineProcessor: string -> bool-> 't): list<'t> =
             readStream streamReader lineProcessor []
 
     module public String =
@@ -232,10 +232,69 @@ module public Utilities =
             /// this string instance.</summary>
             member public this.SplitAtIndexes(indexes: list<int>): list<string> =
                 splitAtIndexes this indexes
+            /// <summary>Trims the whitespace of this string instance depending on the
+            /// passed arguments and returns a new string instance.</summary>
+            member public this.Trim((trimWhitespaceStart: bool), (trimWhitespaceEnd: bool)): string =
+                if trimWhitespaceStart then
+                    if trimWhitespaceEnd then
+                        this.Trim()
+                    else
+                        this.TrimStart()
+                else
+                    if trimWhitespaceEnd then
+                        this.TrimEnd()
+                    else
+                        this
+            /// <summary>Returns a quoted version of this string if the condition function
+            /// evaluates to true.
+            /// The entire string is embraced by a quote pair.
+            /// If a quote character is found, it is quoted by the meta quote character.
+            /// If a meta quote characgter si found, it is quoted by a met quote character.</summary>
+            member public this.Quote((quote: char), (metaQuote: char)): string =
+                let tmp = seq{
+                                yield quote
+                                for character in this do
+                                    if character = quote then
+                                        yield metaQuote
+                                    if character = metaQuote then
+                                        yield metaQuote
+                                    yield character
+                                yield quote
+                             }
+                (new String(Seq.toArray tmp))
+
+            /// <summary>Returns a quoted version of this string if the condition function
+            /// evaluates to true. Otherwise this instance is returned.</summary>
+            member public this.QuoteIf((quote: char), (metaQuote: char), (condition: string -> bool)): string =
+                if condition this then
+                    this.Quote(quote, metaQuote)
+                else
+                    this
 
 module public Model =
-    /// <summary>Represnet a single cell of a CVS file.</summary>
-    type public Cell = { Name: string; Value: string }
+    /// <summary>The basic Interface for tasks.<summary>
+    type public ITaskConfiguration =
+        interface
+        end
+
+    /// <summary>Represents a column definition made of a column name and
+    /// its position/index in a line.</summary>
+    type public ColumnDefinition = { Name: string; Index: int }
+
+    /// <summary>Realizes a column mapping of a source column and a
+    /// target columm. Each column is referenced via its ColumnDefinition name.</summary>
+    type public  ColumnMapping = { Source: ColumnDefinition; Target: ColumnDefinition }
+
+    /// <summary>Realizes a list of column mappings of a source column and a
+    /// target columm. Each column is referenced via its ColumnDefinition name.</summary>
+    type public ColumnMappings = list<ColumnMapping>
+
+    /// <summary>Represents a single cell of a CVS file.
+    /// Name: contains the name of the column this cell belongs to
+    /// Value: contains the actual value nof the cell
+    /// IsHeader: if true, the the cell is treated as the header of a column.
+    /// Otherwise it is treated as a cell with a common value.</summary>
+    type public Cell = { Name: string; Value: string; IsHeader: bool}
 
     /// <summary>A typedef for a list of Cells representing a line.</summary>
     type public Line = list<Cell>
@@ -243,18 +302,24 @@ module public Model =
     /// <summary>A typedef for a list of Lines (list of lists of Cells) representing an entire CSV file.</summary>
     type public Lines = list<Line>
 
-    /// <summary>The basic type for all implementation of Tasks.</summary>
+    /// <summary>The basic interface for all implementation of Tasks.</summary>
     type public ITask =             
         /// <summary>The name of this task that can be used as a reference.</summary>
         abstract member TaskName: string with get
+        /// <summary>A getter for requesting the configuraiton object of a task.</summary>
+        abstract member TaskConfiguration: ITaskConfiguration with get
         
+    /// <summary>The baisc interface for all tasks that get an input and process it.</summary>
     type public IConsumerTask =
         /// <summary>The name of the previous task which results are used as input
         /// data for this task. The task name is used as a reference.</summary>
         abstract member PreviousTask: string with get
-        /// <summary>Realizes a setter that takes the input data of a Task to be processed.</summary>
+        /// <summary>Realizes a setter that takes the input data of a Task to be processed.
+        /// The processing of the inout data is directly started when the 
+        /// property is set.</summary>
         abstract member Input: Lines with set
 
+    /// <summary>The basic interface for all tasks that produces data.</summary>
     type public IGeneratorTask =
         /// <summary>Realizes a getter that offers the result data of a Task.</summary>
-        abstract member Output: Lines with get   
+        abstract member Output: Lines with get

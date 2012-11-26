@@ -20,7 +20,10 @@ let public main(args: array<string>): int =
     let readTask: Reader = new Reader((List.find(fun(taskConf: ITaskConfiguration) -> taskConf :? ReadConfiguration) configuration.Workflow) :?> ReadConfiguration, configuration.ColumnDefinitions)
     Console.WriteLine((readTask :> IGeneratorTask).Output.Length)
     
+    let writeTask: Writer= new Writer((List.find(fun(taskConf: ITaskConfiguration) -> taskConf :? WriteConfiguration) configuration.Workflow) :?> WriteConfiguration)
+    (writeTask :> IConsumerTask).Input <- (readTask :> IGeneratorTask).Output
     
+
     Console.WriteLine("press ENTER to quit")
     Console.ReadLine() |> ignore
     0

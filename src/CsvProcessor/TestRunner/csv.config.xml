@@ -37,32 +37,34 @@
     </read>
     <write task-name="console printer" previous-task="cvs reader">
       <!-- <file path=""/> --> <!-- default is console -->
-      <column ref="unit id" as=""/>
-      <column ref="created at" as=""/>
-      <column ref="golden id" as=""/>
-      <column ref="missed" as=""/>
-      <column ref="started at" as=""/>
-      <column ref="tainted" as=""/>
-      <column ref="channel" as=""/>
-      <column ref="trust" as=""/>
-      <column ref="worker id" as=""/>
-      <column ref="country" as=""/>
-      <column ref="region" as=""/>
-      <column ref="city" as=""/>
-      <column ref="ip" as=""/>
-      <column ref="how diificult was the assertion to decide on" as=""/>
-      <column ref="your choice" as=""/>
-      <column ref="annotated sentence" as=""/>
-      <column ref="file" as=""/>
-      <column ref="line" as=""/>
-      <column ref="pattern" as=""/>
-      <column ref="unannotated sentence" as=""/>
-      <column ref="x" as=""/>
-      <column ref="your coice gold" as=""/>
-      <column ref="ys" as=""/>
+      <file path="tmp.txt"/>
+      <column ref="unit id" as="unit id"/>
+      <column ref="created at" as="created at"/>
+      <column ref="golden id" as="golden id"/>
+      <column ref="missed" as="missed"/>
+      <column ref="started at" as="started at"/>
+      <column ref="tainted" as="tainted"/>
+      <column ref="channel" as="channel"/>
+      <column ref="trust" as="worker trust"/>
+      <column ref="worker id" as="worker id"/>
+      <column ref="country" as="country"/>
+      <column ref="region" as="region"/>
+      <column ref="city" as="city"/>
+      <column ref="ip" as="ip"/>
+      <column ref="how difficult was the assertion to decide on" as="difficulty"/>
+      <column ref="your choice" as="answer"/>
+      <column ref="annotated sentence" as="annotated sentence"/>
+      <column ref="file" as="file"/>
+      <column ref="line" as="line"/>
+      <column ref="pattern" as="pattern"/>
+      <column ref="unannotated sentence" as="unannotated sentence"/>
+      <column ref="x" as="hypernym"/>
+      <column ref="your coice gold" as="gold answer"/>
+      <column ref="ys" as="hyponyms"/>
       <split char="	"/>
       <quote char='"'/>
       <meta-quote char='\'/>
+      <file-mode value='create'/> <!-- create, create-new, append, open, open-or-create -->
     </write>
     <!--
       <filter task-name="cvs filter">

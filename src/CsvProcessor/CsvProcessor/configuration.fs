@@ -9,11 +9,7 @@ open CSV.Core.Exceptions
 open CSV.Core.Utilities.List
 open CSV.Core.Utilities.String
 open CSV.Core.Utilities.Xml
-
-/// <summary>The basic Interface for tasks.<summary>
-type public ITaskConfiguration =
-    interface
-    end
+open CSV.Core.Model
 
 /// <summary>A task representing reading the input file.
 /// FilePath: the path of the file to be read.
@@ -29,14 +25,6 @@ type public ReadConfiguration = { FilePath: string
                                   TaskName: string
                                 } interface ITaskConfiguration
 
-/// <summary>Represents a column definition made of a column name and
-/// its position/index in a line.</summary>
-type public ColumnDefinition = { Name: string; Index: int }
-
-/// <summary>Realizes a column mapping of a source column and a
-/// target columm. Each column is referenced via its ColumnDefinition name.</summary>
-type public  ColumnMapping = { Source: ColumnDefinition; Target: ColumnDefinition }
-
 /// <summary>A task representing the printing operation on screen.
 /// ColumnMappings: the mapping between incoming columns and outgoing columns.
 /// If there is no mapping fo a column it is ignored
@@ -51,7 +39,7 @@ type public  ColumnMapping = { Source: ColumnDefinition; Target: ColumnDefinitio
 /// TrimWhitepsaceStart: if true, each value's whitespace is remove on the left side
 /// TrimWhitespaceEnd: if true, each value's whitespace is removed on the right side
 /// PreviousTask: the task that generated the content to be consumed by this task.</summary>
-type public WriteConfiguration = { ColumnMappings: list<ColumnMapping>
+type public WriteConfiguration = { ColumnMappings: ColumnMappings
                                    FilePath: option<string>
                                    Split: char
                                    Quote: char
@@ -60,6 +48,7 @@ type public WriteConfiguration = { ColumnMappings: list<ColumnMapping>
                                    TrimWhitespaceEnd: bool
                                    TaskName: string
                                    PreviousTask: string
+                                   FileMode: FileMode
                                  } interface ITaskConfiguration
 
 /// <summary>Reads the xml configuration file fpor this application
@@ -98,23 +87,35 @@ let private getQuoteChar(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): char =
 let private getMetaQuoteChar(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): char =
     getCharFromAttribute xmlNode xnsm (CONFIG_NAMESPACE_PREFIX + ":meta-quote/@char")
 
-/// <summary>Returns true or false representing the boolean value of trim-whitespace-start.
-/// If this attribute ist not set in xml, false is returned.</summary>
-let private getTrimWhitespaceStart(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): bool =
-    let tmp: XmlNode = ownerNode.SelectSingleNode(CONFIG_NAMESPACE_PREFIX + ":trim-whitespace-start/@value", xnsm)
+/// <summary>Returns a boolena value of the matched XPATH expression (must result in an
+/// attribute) or false if the XPATH does not match.</summary>
+let private getBooleanOrFalse(ownerNode: XmlNode) (xnsm: XmlNamespaceManager) (xpath: string): bool =
+    let tmp: XmlNode = ownerNode.SelectSingleNode(xpath, xnsm)
     if tmp = null then
         false
     else
         bool.Parse(tmp.Value)
 
+/// <summary>Returns true or false representing the boolean value of trim-whitespace-start.
+/// If this attribute ist not set in xml, false is returned.</summary>
+let private getTrimWhitespaceStart(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): bool =
+    getBooleanOrFalse ownerNode xnsm (CONFIG_NAMESPACE_PREFIX + ":trim-whitespace-start/@value")
+
 /// <summary>Returns true or false representing the boolean value of trim-whitespace-end.
 /// If this attribute ist not set in xml, false is returned.</summary>
 let private getTrimWhitespaceEnd(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): bool =
-    let tmp: XmlNode = ownerNode.SelectSingleNode(CONFIG_NAMESPACE_PREFIX + ":trim-whitespace-end/@value", xnsm)
-    if tmp = null then
-        false
+    getBooleanOrFalse ownerNode xnsm (CONFIG_NAMESPACE_PREFIX + ":trim-whitespace-end/@value")
+
+/// <summary>Returns a FileMode instance that says how to open the file.</summary>
+let private getFileMode(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): FileMode =
+    let node: XmlNode = ownerNode.SelectSingleNode(CONFIG_NAMESPACE_PREFIX + ":file-mode", xnsm)
+    if node = null then
+        FileMode.CreateNew
     else
-        bool.Parse(tmp.Value)
+        try
+            Enum.Parse(typeof<FileMode>, GetStringValueOfAttribute node "value", true) :?> FileMode
+        with
+            | _-> raise(new ConfigurationException("The value <filemode value=" + (GetStringValueOfAttribute node "value") + " could not be parsed!"))
    
 /// <summary>Creates a ReadTask object from an xmlNode.</summary>
 let private parseReadTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): ReadConfiguration =
@@ -141,7 +142,7 @@ let private getFilePath(taskNode: XmlNode) (xnsm: XmlNamespaceManager): option<s
         None
 
 /// <summary>Returns a list of ColumnMapping instances contained in the owner node.</summary>
-let private getColumnMappings(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): list<ColumnMapping> =
+let private getColumnMappings(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): ColumnMappings =
     AddIndexes(GetAttributePairsFromNodes (ownerNode.SelectNodes(CONFIG_NAMESPACE_PREFIX + ":column", xnsm)) "ref" "as")
     |> List.map(fun(((source: string), (target: string)), (index: int)) -> { ColumnMapping.Source = { ColumnDefinition.Name = source
                                                                                                       ColumnDefinition.Index = index
@@ -173,6 +174,7 @@ let private parseWriteTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): WriteC
           WriteConfiguration.TrimWhitespaceEnd = getTrimWhitespaceEnd xmlNode xnsm
           WriteConfiguration.TaskName = GetStringValueOfAttribute xmlNode "task-name"
           WriteConfiguration.PreviousTask = GetStringValueOfAttribute xmlNode "previous-task"
+          WriteConfiguration.FileMode = getFileMode xmlNode xnsm
         }
     with
     | _ as err -> raise(new ConfigurationException("a write task could not be parsed", err))
