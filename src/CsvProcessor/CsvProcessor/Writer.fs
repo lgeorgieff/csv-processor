@@ -23,12 +23,14 @@ type public Writer(configuration: WriteConfiguration) =
                                                     new StreamWriter(File.Open(destination.Value, configuration.FileMode))                                                
             let rec write(lines: Lines): Unit =
                 if lines <> [] then
-                    let resultingLine: string = this.LineToString(List.head lines)
-                    if resultingLine <> "" then // ignore empty lines
-                        destinationWriter.WriteLine(resultingLine)
+                    if not(IsHeaderLine (List.head lines) true) then // ignore header lines
+                        let resultingLine: string = this.LineToString(List.head lines)
+                        if resultingLine <> "" then // ignore empty lines
+                            destinationWriter.WriteLine(resultingLine)
                     write (List.tail lines)
             let headerLine: string = this.GenerateHeaderLine configuration.ColumnMappings
             if headerLine <> "" then
+                // write the new heder line corresponding to the column mapping
                 destinationWriter.WriteLine(headerLine)
             write (input.Value)
 
@@ -36,16 +38,15 @@ type public Writer(configuration: WriteConfiguration) =
     /// textual representation.</summary>
     member private this.GenerateHeaderLine(columnMappings: ColumnMappings): string =
         let headerLine: Line = List.sortBy(fun(mapping: ColumnMapping) -> mapping.Target.Index) columnMappings
-                               |> List.map(fun(mapping: ColumnMapping) -> { Cell.Name = mapping.Target.Name
-                                                                            Cell.Value = mapping.Target.Name
-                                                                            Cell.IsHeader = true
-                                                                          })
+                               |> List.map(fun(mapping: ColumnMapping) -> { HeaderCell.Name = mapping.Target.Name
+                                                                            HeaderCell.Value = mapping.Target.Name
+                                                                          } :> ICell )
         Writer.Stringfy(headerLine, configuration.Split, configuration.Quote, configuration.MetaQuote, configuration.TrimWhitespaceStart, configuration.TrimWhitespaceEnd)
     
     /// <summary>Generates a string from the passed line that corresponds to this
     /// instance's configuration.</summary>
     static member private Stringfy((line: Line), (split: char), (quote: char), (metaQuote: char), (trimWhitespaceStart: bool), (trimWhitespaceEnd: bool)): string =
-        List.fold(fun(constructedLine: string) (cell: Cell) ->
+        List.fold(fun(constructedLine: string) (cell: ICell) ->
             let valueToAdd: string = cell.Value.Trim(trimWhitespaceStart, trimWhitespaceEnd).QuoteIf(quote, metaQuote, fun(item: string) -> item.Contains(split.ToString()))
             if constructedLine = "" then
                 valueToAdd
@@ -56,11 +57,10 @@ type public Writer(configuration: WriteConfiguration) =
     /// <summary>Returns a string representing the passed instance of Line.</summary>
     static member public LineToString((line: Line), (split: char), (quote: char), (metaQuote: char), (trimWhitespaceStart: bool), (trimWhitespaceEnd: bool), (columnMappings: ColumnMappings)): string =
         let constructtedLine: Line =
-            List.filter(fun(cell: Cell) ->
+            List.filter(fun(cell: ICell) ->
                 List.exists(fun(mapping: ColumnMapping) ->
                         mapping.Source.Name = cell.Name) columnMappings) line
-                |> List.filter(fun(cell: Cell) -> not cell.IsHeader)
-                |> List.sortBy(fun(cell: Cell) ->
+                |> List.sortBy(fun(cell: ICell) ->
                     (List.find(fun(mapping: ColumnMapping) ->
                         mapping.Source.Name = cell.Name) columnMappings).Target.Index)
         Writer.Stringfy(constructtedLine, split, quote, metaQuote, trimWhitespaceStart, trimWhitespaceEnd)

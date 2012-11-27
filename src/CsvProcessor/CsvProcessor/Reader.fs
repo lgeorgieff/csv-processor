@@ -20,7 +20,15 @@ type public Reader(configuration: ReadConfiguration, columnDefinitions: list<Col
             raise(new TaskException("The number of columns does not match the number of column definitions for this line: " + line))
         List.map(fun(part: string) -> part.Trim(configuration.TrimWhitepsaceStart, configuration.TrimWhitespaceEnd)) parts
         |> List.zip columnDefinitions
-        |> List.map(fun(colDef: ColumnDefinition, value: string) -> { Cell.Name = colDef.Name; Cell.Value = value; Cell.IsHeader = lineIsHeader })
+        |> List.map(fun(colDef: ColumnDefinition, value: string) ->
+            if lineIsHeader then
+                { HeaderCell.Name = colDef.Name
+                  HeaderCell.Value = value
+                } :> ICell
+            else
+                { Cell.Name = colDef.Name
+                  Cell.Value = value
+                } :> ICell)
     do
         self.ReadFile()
     member private this.ReadFile(): Unit =

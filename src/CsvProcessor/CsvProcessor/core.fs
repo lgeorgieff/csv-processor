@@ -289,15 +289,40 @@ module public Model =
     /// target columm. Each column is referenced via its ColumnDefinition name.</summary>
     type public ColumnMappings = list<ColumnMapping>
 
+    /// <summary>An interface for all cells. It offers only getters
+    /// for requesting the cell's value or its name. The setting must
+    /// be done in the constructor.</summary>
+    type public ICell =
+        abstract member Value: string with get
+        abstract member Name: string with get
+
     /// <summary>Represents a single cell of a CVS file.
     /// Name: contains the name of the column this cell belongs to
-    /// Value: contains the actual value nof the cell
-    /// IsHeader: if true, the the cell is treated as the header of a column.
-    /// Otherwise it is treated as a cell with a common value.</summary>
-    type public Cell = { Name: string; Value: string; IsHeader: bool}
+    /// Value: contains the actual value of the cell.</summary>
+    type public Cell = { Name: string; Value: string } with
+        interface ICell with
+            member this.Value: string = this.Value
+            member this.Name: string = this.Name
+
+    /// <summary>Represents a single header cell of a CVS file.
+    /// Name: contains the name of the column this cell belongs to
+    /// Value: contains the actual value of the cell, in the case of header
+    /// cells the name of it.</summary>
+    type public HeaderCell = { Name: string; Value: string } with
+        interface ICell with
+            member this.Value: string = this.Value
+            member this.Name: string = this.Name
 
     /// <summary>A typedef for a list of Cells representing a line.</summary>
-    type public Line = list<Cell>
+    type public Line = list<ICell>
+
+    /// <summary>Returns true if the passed line is a header line.
+    /// If allCells is set to true, each cell in the line must be a HeaderCell
+    /// otherwise one occurrence of a HederCell in a single line is sufficient
+    /// to identifiy a line as heder line.</summary>
+    let public IsHeaderLine(line: Line) (allCells: bool): bool =
+        let headerCells: Line = List.filter(fun(cell: ICell) -> cell :? HeaderCell) line
+        (allCells && List.length headerCells = List.length line) || (not allCells && List.length headerCells > 0)
 
     /// <summary>A typedef for a list of Lines (list of lists of Cells) representing an entire CSV file.</summary>
     type public Lines = list<Line>
