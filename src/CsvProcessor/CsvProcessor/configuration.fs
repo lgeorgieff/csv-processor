@@ -23,7 +23,8 @@ type public ReadConfiguration = { FilePath: string
                                   TrimWhitepsaceStart: bool
                                   TrimWhitespaceEnd: bool
                                   TaskName: string
-                                } interface ITaskConfiguration
+                                } interface ITaskConfiguration with
+                                    member this.TaskName: string = this.TaskName
 
 /// <summary>A task representing the printing operation on screen.
 /// ColumnMappings: the mapping between incoming columns and outgoing columns.
@@ -49,7 +50,8 @@ type public WriteConfiguration = { ColumnMappings: ColumnMappings
                                    TaskName: string
                                    PreviousTask: string
                                    FileMode: FileMode
-                                 } interface ITaskConfiguration
+                                 } interface ITaskConfiguration with
+                                    member this.TaskName: string = this.TaskName
 
 /// <summary>Reads the xml configuration file fpor this application
 /// and returns a list of tuples that expresses the column name
@@ -154,16 +156,6 @@ let private getColumnMappings(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): C
 
 /// <summary>Creates a WriteTask object from an xmlNode.</summary>
 let private parseWriteTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): WriteConfiguration =
-    let tmp_0 = getColumnMappings xmlNode xnsm
-    let tmp_1 = getFilePath xmlNode xnsm
-    let tmp_2 = getSplitChar xmlNode xnsm
-    let tmp_4 = getQuoteChar xmlNode xnsm
-    let tmp_5 = getMetaQuoteChar xmlNode xnsm
-    let tmp_6 = getTrimWhitespaceStart xmlNode xnsm
-    let tmp_7 = getTrimWhitespaceEnd xmlNode xnsm
-    let tmp_8 = GetStringValueOfAttribute xmlNode "task-name"
-    let tmp_9 = GetStringValueOfAttribute xmlNode "previous-task"
-
     try
         { WriteConfiguration.ColumnMappings = getColumnMappings xmlNode xnsm
           WriteConfiguration.FilePath = getFilePath xmlNode xnsm

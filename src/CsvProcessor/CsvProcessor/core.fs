@@ -274,8 +274,7 @@ module public Utilities =
 module public Model =
     /// <summary>The basic Interface for tasks.<summary>
     type public ITaskConfiguration =
-        interface
-        end
+        abstract member TaskName: string with get
 
     /// <summary>Represents a column definition made of a column name and
     /// its position/index in a line.</summary>
