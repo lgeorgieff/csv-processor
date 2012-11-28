@@ -20,8 +20,18 @@ let public main(args: array<string>): int =
     let readTask: Reader = new Reader((List.find(fun(taskConf: ITaskConfiguration) -> taskConf :? ReadConfiguration) configuration.Workflow) :?> ReadConfiguration, configuration.ColumnDefinitions)
     Console.WriteLine((readTask :> IGeneratorTask).Output.Length)
     
+    let genericTask: GenericTask = new GenericTask((List.find(fun(taskConf: ITaskConfiguration) -> taskConf :? GenericTaskConfiguration) configuration.Workflow) :?> GenericTaskConfiguration)
+    let genericOperation(line :Line): option<Line> =
+        if (List.tryFind(fun(cell: ICell) -> cell.Name = "country" && cell.Value.ToLower() = "usa") line).IsSome then
+            Some line
+        else
+            None
+    GenericTask.RegisterOperation "country = usa" genericOperation
+    (genericTask :> IConsumerTask).Input <- (readTask :> IGeneratorTask).Output
+
     let writeTask: Writer= new Writer((List.find(fun(taskConf: ITaskConfiguration) -> taskConf :? WriteConfiguration) configuration.Workflow) :?> WriteConfiguration)
-    (writeTask :> IConsumerTask).Input <- (readTask :> IGeneratorTask).Output
+    (writeTask :> IConsumerTask).Input <- (genericTask :> IGeneratorTask).Output
+
     
 
     Console.WriteLine("press ENTER to quit")

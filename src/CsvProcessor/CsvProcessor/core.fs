@@ -17,12 +17,25 @@ module public Exceptions =
         new (message: string) = TaskException(message, null)
         new () = TaskException(null, null)
 
-    /// <summary>Sjould be thrown if a property is thought to be set only once,
+    /// <summary>Should be thrown if a property is thought to be set only once,
     /// but is tried to be set multiple times.</summary>
     type public PropertyAlreadySetException(message: string, innerException: Exception) =
         inherit Exception(message, innerException)
         new (message: string) = PropertyAlreadySetException(message, null)
         new () = PropertyAlreadySetException(null, null)
+
+    /// <summary>Should be thrown if a property is invoked that was not set yet.</summary>
+    type public PropertyNotSetException(message: string, innerException: Exception) =
+        inherit Exception(message, innerException)
+        new (message: string) = PropertyNotSetException(message, null)
+        new () = PropertyNotSetException(null, null)
+
+    /// <summary>Should be thrown if an operation of a CSV.Tasks.GenericTask fails
+    /// or causes any error, e.g. during registration.</summary>
+    type public GenericOperationException(message: string, innerException: Exception) =
+        inherit Exception(message, innerException)
+        new (message: string) = GenericOperationException(message, null)
+        new () = GenericOperationException(null, null)
 
 module public Utilities =
     module public List =

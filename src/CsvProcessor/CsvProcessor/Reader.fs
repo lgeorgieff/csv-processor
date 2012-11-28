@@ -13,7 +13,7 @@ open CSV.Core.Utilities.IO
 /// <summary>Implements the Read task and reads and splits a CVS file into memory.
 /// The result can be requested by calling the getter Output</summary>
 type public Reader(configuration: ReadConfiguration, columnDefinitions: list<ColumnDefinition>) as self =
-    let mutable output: Lines = []    
+    let mutable output: Lines = []   
     let lineProcessor(line: string) (lineIsHeader: bool): Line =
         let parts: list<string> = line.SplitLine(configuration.Split, configuration.Quote, configuration.MetaQuote)
         if parts.Length <> List.length columnDefinitions then

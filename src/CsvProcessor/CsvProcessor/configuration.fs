@@ -53,6 +53,17 @@ type public WriteConfiguration = { ColumnMappings: ColumnMappings
                                  } interface ITaskConfiguration with
                                     member this.TaskName: string = this.TaskName
 
+/// <summary>A configuration class representing configuration settings for
+/// generic tasks.
+/// Operation: an identifier for the used operation
+/// PrevisouTask: the task that generated the content to be consumed by this task
+/// TaskName: the identifier of the actual task.</summary>
+type public GenericTaskConfiguration = { Operation: string
+                                         PreviousTask: string
+                                         TaskName: string
+                                       } interface ITaskConfiguration with
+                                            member this.TaskName: string = this.TaskName
+
 /// <summary>Reads the xml configuration file fpor this application
 /// and returns a list of tuples that expresses the column name
 /// and their position.</summary>
@@ -118,8 +129,19 @@ let private getFileMode(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): FileMod
             Enum.Parse(typeof<FileMode>, GetStringValueOfAttribute node "value", true) :?> FileMode
         with
             | _-> raise(new ConfigurationException("The value <filemode value=" + (GetStringValueOfAttribute node "value") + " could not be parsed!"))
+
+/// <sumamry>Returns the operation identifier of the operation of a
+/// GenericTaskConfiguration.</summary>
+let private getGenericOperation(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): string =
+    let operationNode: XmlNode = ownerNode.SelectSingleNode(CONFIG_NAMESPACE_PREFIX + ":operation", xnsm)
+    if operationNode = null then
+        raise(new ConfigurationException("The element \"operation\" is missing from " + ownerNode.Name))
+    let attrNode: XmlNode = operationNode.SelectSingleNode("@identifier")
+    if attrNode = null then
+        raise(new ConfigurationException("The attribute \"identifier\" is missing from " + attrNode.Name))
+    attrNode.Value
    
-/// <summary>Creates a ReadTask object from an xmlNode.</summary>
+/// <summary>Creates a ReadTaskConfiguration object from an xmlNode.</summary>
 let private parseReadTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): ReadConfiguration =
     try
         { ReadConfiguration.FilePath = xmlNode.SelectSingleNode(CONFIG_NAMESPACE_PREFIX + ":file/@path", xnsm).Value
@@ -154,7 +176,7 @@ let private getColumnMappings(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): C
                                                                                                     }
                                                                            })
 
-/// <summary>Creates a WriteTask object from an xmlNode.</summary>
+/// <summary>Creates a WriteTaskConfiguration object from an xmlNode.</summary>
 let private parseWriteTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): WriteConfiguration =
     try
         { WriteConfiguration.ColumnMappings = getColumnMappings xmlNode xnsm
@@ -171,13 +193,24 @@ let private parseWriteTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): WriteC
     with
     | _ as err -> raise(new ConfigurationException("a write task could not be parsed", err))
 
+/// <summary>Creates a GenericTaskConfiguration object from an xmlNode.</summary>
+let private parseGenericTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): GenericTaskConfiguration =
+    try
+        { GenericTaskConfiguration.Operation = getGenericOperation xmlNode xnsm
+          GenericTaskConfiguration.PreviousTask = GetStringValueOfAttribute xmlNode "previous-task"
+          GenericTaskConfiguration.TaskName = GetStringValueOfAttribute xmlNode "task-name"
+        }
+    with
+    | _ as err -> raise(new ConfigurationException("a generic task could not be parsed", err))
+
 /// <summary>Transforms all xml nodes representing tasks to the corresponding record types.</summary>
 let private getTasks(dom: XmlDocument) (xnsm: XmlNamespaceManager): list<ITaskConfiguration> =
     let children: XmlNodeList = dom.SelectNodes(XPATH_TASKS, xnsm)
     seq { for taskNode in children do
             yield match (taskNode.LocalName, taskNode.NamespaceURI) with
-                    | ("write", CONFIG_NAMESPACE) -> (parseWriteTask taskNode xnsm) :> ITaskConfiguration
-                    | ("read", CONFIG_NAMESPACE) -> (parseReadTask taskNode xnsm) :> ITaskConfiguration
+                    | ("write-task", CONFIG_NAMESPACE) -> (parseWriteTask taskNode xnsm) :> ITaskConfiguration
+                    | ("read-task", CONFIG_NAMESPACE) -> (parseReadTask taskNode xnsm) :> ITaskConfiguration
+                    | ("generic-task", CONFIG_NAMESPACE) -> (parseGenericTask taskNode xnsm) :> ITaskConfiguration
                     | _ -> raise(new ConfigurationException("Element " + taskNode.Name + " not allowed here"))
     } |> Seq.toList
 
