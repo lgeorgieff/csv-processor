@@ -55,10 +55,15 @@ type public WriteConfiguration = { ColumnMappings: ColumnMappings
 
 /// <summary>A configuration class representing configuration settings for
 /// generic tasks.
-/// Operation: an identifier for the used operation
+/// LineOperation: an identifier for the used operation that is applied
+/// line by line. If it is set to None, DocumentOperation must be set
+/// DocumentOperation: an identifier for the used operation that is
+/// applied at once for the entire document. If it is set to none,
+/// LineOperation muest be set.
 /// PrevisouTask: the task that generated the content to be consumed by this task
 /// TaskName: the identifier of the actual task.</summary>
-type public GenericTaskConfiguration = { Operation: string
+type public GenericTaskConfiguration = { LineOperation: option<string>
+                                         DocumentOperation: option<string>
                                          PreviousTask: string
                                          TaskName: string
                                        } interface ITaskConfiguration with
@@ -131,15 +136,28 @@ let private getFileMode(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): FileMod
             | _-> raise(new ConfigurationException("The value <filemode value=" + (GetStringValueOfAttribute node "value") + " could not be parsed!"))
 
 /// <sumamry>Returns the operation identifier of the operation of a
-/// GenericTaskConfiguration.</summary>
-let private getGenericOperation(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): string =
-    let operationNode: XmlNode = ownerNode.SelectSingleNode(CONFIG_NAMESPACE_PREFIX + ":operation", xnsm)
+/// GenericTaskConfiguration that is applied line by line.</summary>
+let private getLineOperation(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): option<string> =
+    let operationNode: XmlNode = ownerNode.SelectSingleNode(CONFIG_NAMESPACE_PREFIX + ":line-operation", xnsm)
     if operationNode = null then
-        raise(new ConfigurationException("The element \"operation\" is missing from " + ownerNode.Name))
-    let attrNode: XmlNode = operationNode.SelectSingleNode("@identifier")
-    if attrNode = null then
-        raise(new ConfigurationException("The attribute \"identifier\" is missing from " + attrNode.Name))
-    attrNode.Value
+        None
+    else
+        let attrNode: XmlNode = operationNode.SelectSingleNode("@identifier")
+        if attrNode = null then
+            raise(new ConfigurationException("The attribute \"identifier\" is missing from " + attrNode.Name))
+        Some(attrNode.Value)
+
+/// <sumamry>Returns the operation identifier of the operation of a
+/// GenericTaskConfiguration that is applied once on an entire document.</summary>
+let private getDocumentOperation(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): option<string> =
+    let operationNode: XmlNode = ownerNode.SelectSingleNode(CONFIG_NAMESPACE_PREFIX + ":document-operation", xnsm)
+    if operationNode = null then
+        None
+    else
+        let attrNode: XmlNode = operationNode.SelectSingleNode("@identifier")
+        if attrNode = null then
+            raise(new ConfigurationException("The attribute \"identifier\" is missing from " + attrNode.Name))
+        Some(attrNode.Value)
    
 /// <summary>Creates a ReadTaskConfiguration object from an xmlNode.</summary>
 let private parseReadTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): ReadConfiguration =
@@ -196,7 +214,14 @@ let private parseWriteTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): WriteC
 /// <summary>Creates a GenericTaskConfiguration object from an xmlNode.</summary>
 let private parseGenericTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): GenericTaskConfiguration =
     try
-        { GenericTaskConfiguration.Operation = getGenericOperation xmlNode xnsm
+        let lineOperation: option<string> = getLineOperation xmlNode xnsm
+        let documentOperation: option<string> = getDocumentOperation xmlNode xnsm
+        if lineOperation.IsNone && documentOperation.IsNone then
+            raise(new ConfigurationException("only one of <line-operation> and <document-operation> must be set"))
+        if lineOperation.IsSome && documentOperation.IsSome then
+            raise(new ConfigurationException("one of <line-operation> and <document-operation> must be set"))
+        { GenericTaskConfiguration.LineOperation = lineOperation
+          GenericTaskConfiguration.DocumentOperation = documentOperation
           GenericTaskConfiguration.PreviousTask = GetStringValueOfAttribute xmlNode "previous-task"
           GenericTaskConfiguration.TaskName = GetStringValueOfAttribute xmlNode "task-name"
         }

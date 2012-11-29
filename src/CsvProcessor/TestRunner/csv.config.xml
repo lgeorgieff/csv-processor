@@ -66,8 +66,11 @@
       <meta-quote char='\'/>
       <file-mode value='create'/> <!-- create, create-new, append, open, open-or-create -->
     </write-task>
-    <generic-task task-name="filter" previous-task="printer">
-      <operation identifier="country = usa"/>
+    <generic-task task-name="usa filter" previous-task="printer">
+      <line-operation identifier="country = usa"/> <!-- either line-operation or document operation muest be set -->
+    </generic-task>
+    <generic-task task-name="even row filter" previous-task="usa filter">
+      <document-operation identifier="line position % 2 = 0"/>
     </generic-task>
   </workflow>
 </cf-result-viewer>

@@ -20,17 +20,23 @@ let public main(args: array<string>): int =
     let readTask: Reader = new Reader((List.find(fun(taskConf: ITaskConfiguration) -> taskConf :? ReadConfiguration) configuration.Workflow) :?> ReadConfiguration, configuration.ColumnDefinitions)
     Console.WriteLine((readTask :> IGeneratorTask).Output.Length)
     
-    let genericTask: GenericTask = new GenericTask((List.find(fun(taskConf: ITaskConfiguration) -> taskConf :? GenericTaskConfiguration) configuration.Workflow) :?> GenericTaskConfiguration)
-    let genericOperation(line :Line): option<Line> =
+    let genericTask1: GenericTask = new GenericTask((List.find(fun(taskConf: ITaskConfiguration) -> taskConf.TaskName = "usa filter") configuration.Workflow) :?> GenericTaskConfiguration)
+    let genericTask2: GenericTask = new GenericTask((List.find(fun(taskConf: ITaskConfiguration) -> taskConf.TaskName = "even row filter") configuration.Workflow) :?> GenericTaskConfiguration)
+    let lineOperation(line :Line): option<Line> =
         if (List.tryFind(fun(cell: ICell) -> cell.Name = "country" && cell.Value.ToLower() = "usa") line).IsSome then
             Some line
         else
             None
-    GenericTask.RegisterOperation "country = usa" genericOperation
-    (genericTask :> IConsumerTask).Input <- (readTask :> IGeneratorTask).Output
+    let documentOperation(lines: Lines): Lines =
+        CSV.Core.Utilities.List.FilterEachSecond (List.filter(fun(line: Line) -> not(IsHeaderLine line true)) lines) true
+
+    GenericTask.RegisterOperation("country = usa", lineOperation)
+    GenericTask.RegisterOperation("line position % 2 = 0", documentOperation)
+    (genericTask1 :> IConsumerTask).Input <- (readTask :> IGeneratorTask).Output
+    (genericTask2 :> IConsumerTask).Input <- (genericTask1 :> IGeneratorTask).Output
 
     let writeTask: Writer= new Writer((List.find(fun(taskConf: ITaskConfiguration) -> taskConf :? WriteConfiguration) configuration.Workflow) :?> WriteConfiguration)
-    (writeTask :> IConsumerTask).Input <- (genericTask :> IGeneratorTask).Output
+    (writeTask :> IConsumerTask).Input <- (genericTask2 :> IGeneratorTask).Output
 
     
 
