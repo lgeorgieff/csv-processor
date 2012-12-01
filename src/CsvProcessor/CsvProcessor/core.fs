@@ -120,6 +120,18 @@ module public Utilities =
             else
                 tmp.Value
 
+        /// <summary>A helper function for mapping XmlNodeLists.</summary>
+        let rec private mapXmlNodeList(operation: XmlNode -> 'a) (index: int) (results: list<'a>) (nodes: XmlNodeList): list<'a> =
+            if index >= nodes.Count then
+                results
+            else
+                mapXmlNodeList operation (index + 1) (results @ [operation nodes.[index]]) nodes
+
+        /// <summary>Maps the passed XmlNodeList and returns a list of results of the
+        /// operation arguments of type 'a.</summary>
+        let public MapXmlNodeList(operation: XmlNode -> 'a) (nodes: XmlNodeList): list<'a> =
+            mapXmlNodeList operation 0 [] nodes
+
     module public IO =
         /// <summary>Reads the entire stream line by line and invokes lineProcessor on each line.
         /// Finally, the entire list of results of lineProcessor is returned.</summary>

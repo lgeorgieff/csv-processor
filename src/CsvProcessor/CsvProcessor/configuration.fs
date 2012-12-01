@@ -252,11 +252,8 @@ type public WorkflowConfiguration = { ColumnDefinitions: list<ColumnDefinition>
                                         let xnsm: XmlNamespaceManager = new XmlNamespaceManager(dom.NameTable)
                                         xnsm.AddNamespace("appns", CONFIG_NAMESPACE)
                                         dom.Load(filePath)
-                                        seq{
-                                            for wfNode in dom.SelectNodes(XPATH_WORKFLOWS, xnsm) do
-                                                yield { WorkflowConfiguration.ColumnDefinitions = getColumnDefinitions wfNode xnsm
-                                                        WorkflowConfiguration.Workflow = getTasks wfNode xnsm
-                                                        WorkflowConfiguration.Name = GetStringValueOfAttribute wfNode "name"
-                                                        }
-                                            }
-                                        |> Seq.toList
+                                        MapXmlNodeList(fun (workflowNode: XmlNode) ->
+                                            { WorkflowConfiguration.ColumnDefinitions = getColumnDefinitions workflowNode xnsm
+                                              WorkflowConfiguration.Workflow = getTasks workflowNode xnsm
+                                              WorkflowConfiguration.Name = GetStringValueOfAttribute workflowNode "name"
+                                            }) (dom.SelectNodes(XPATH_WORKFLOWS, xnsm))
