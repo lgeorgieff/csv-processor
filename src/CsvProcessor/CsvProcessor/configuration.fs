@@ -72,9 +72,9 @@ type public GenericTaskConfiguration = { LineOperation: option<string>
 /// <summary>Reads the xml configuration file fpor this application
 /// and returns a list of tuples that expresses the column name
 /// and their position.</summary>
-let private getColumnDefinitions(dom: XmlDocument) (xnsm: XmlNamespaceManager): list<ColumnDefinition> =    
+let private getColumnDefinitions(workflow: XmlNode) (xnsm: XmlNamespaceManager): list<ColumnDefinition> =    
     try
-        let colNames: XmlNodeList = dom.SelectNodes(XPATH_COLUMN_DEFINITIONS_NAMES, xnsm)
+        let colNames: XmlNodeList = workflow.SelectNodes(XPATH_COLUMN_DEFINITIONS_NAMES, xnsm)
         seq{ for col in colNames do
                 yield col.Value
         } |> Seq.toList
@@ -168,7 +168,7 @@ let private parseReadTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): ReadCon
           ReadConfiguration.MetaQuote = getMetaQuoteChar xmlNode xnsm
           ReadConfiguration.TrimWhitepsaceStart = getTrimWhitespaceStart xmlNode xnsm
           ReadConfiguration.TrimWhitespaceEnd = getTrimWhitespaceEnd xmlNode xnsm
-          ReadConfiguration.TaskName = GetStringValueOfAttribute xmlNode "task-name"
+          ReadConfiguration.TaskName = GetStringValueOfAttribute xmlNode "name"
         }
     with
     | _ as err -> raise(new ConfigurationException("a read task could not be parsed", err))
@@ -204,7 +204,7 @@ let private parseWriteTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): WriteC
           WriteConfiguration.MetaQuote = getMetaQuoteChar xmlNode xnsm
           WriteConfiguration.TrimWhitespaceStart = getTrimWhitespaceStart xmlNode xnsm
           WriteConfiguration.TrimWhitespaceEnd = getTrimWhitespaceEnd xmlNode xnsm
-          WriteConfiguration.TaskName = GetStringValueOfAttribute xmlNode "task-name"
+          WriteConfiguration.TaskName = GetStringValueOfAttribute xmlNode "name"
           WriteConfiguration.PreviousTask = GetStringValueOfAttribute xmlNode "previous-task"
           WriteConfiguration.FileMode = getFileMode xmlNode xnsm
         }
@@ -223,14 +223,14 @@ let private parseGenericTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): Gene
         { GenericTaskConfiguration.LineOperation = lineOperation
           GenericTaskConfiguration.DocumentOperation = documentOperation
           GenericTaskConfiguration.PreviousTask = GetStringValueOfAttribute xmlNode "previous-task"
-          GenericTaskConfiguration.TaskName = GetStringValueOfAttribute xmlNode "task-name"
+          GenericTaskConfiguration.TaskName = GetStringValueOfAttribute xmlNode "name"
         }
     with
     | _ as err -> raise(new ConfigurationException("a generic task could not be parsed", err))
 
 /// <summary>Transforms all xml nodes representing tasks to the corresponding record types.</summary>
-let private getTasks(dom: XmlDocument) (xnsm: XmlNamespaceManager): list<ITaskConfiguration> =
-    let children: XmlNodeList = dom.SelectNodes(XPATH_TASKS, xnsm)
+let private getTasks(workflow: XmlNode) (xnsm: XmlNamespaceManager): list<ITaskConfiguration> =
+    let children: XmlNodeList = workflow.SelectNodes(XPATH_TASKS, xnsm)
     seq { for taskNode in children do
             yield match (taskNode.LocalName, taskNode.NamespaceURI) with
                     | ("write-task", CONFIG_NAMESPACE) -> (parseWriteTask taskNode xnsm) :> ITaskConfiguration
@@ -241,15 +241,22 @@ let private getTasks(dom: XmlDocument) (xnsm: XmlNamespaceManager): list<ITaskCo
 
 
 /// <summary>Represents the entire application configuration.</summary>
-type public Configuration = { ColumnDefinitions: list<ColumnDefinition>
-                              Workflow: list<ITaskConfiguration>
-                            } with 
-                                /// <summary>Returns a Configuration instance from the passed
-                                /// xml configuration file.</summary>
-                                static member public Parse(filePath: string) = let dom: XmlDocument = new XmlDocument()
-                                                                               let xnsm: XmlNamespaceManager = new XmlNamespaceManager(dom.NameTable)
-                                                                               xnsm.AddNamespace("appns", CONFIG_NAMESPACE)
-                                                                               dom.Load(filePath)
-                                                                               { Configuration.ColumnDefinitions = getColumnDefinitions dom xnsm
-                                                                                 Configuration.Workflow = getTasks dom xnsm
-                                                                               }
+type public WorkflowConfiguration = { ColumnDefinitions: list<ColumnDefinition>
+                                      Workflow: list<ITaskConfiguration>
+                                      Name: string
+                                    } with 
+                                    /// <summary>Returns a Configuration instance from the passed
+                                    /// xml configuration file.</summary>
+                                    static member public Parse(filePath: string): list<WorkflowConfiguration> =
+                                        let dom: XmlDocument = new XmlDocument()
+                                        let xnsm: XmlNamespaceManager = new XmlNamespaceManager(dom.NameTable)
+                                        xnsm.AddNamespace("appns", CONFIG_NAMESPACE)
+                                        dom.Load(filePath)
+                                        seq{
+                                            for wfNode in dom.SelectNodes(XPATH_WORKFLOWS, xnsm) do
+                                                yield { WorkflowConfiguration.ColumnDefinitions = getColumnDefinitions wfNode xnsm
+                                                        WorkflowConfiguration.Workflow = getTasks wfNode xnsm
+                                                        WorkflowConfiguration.Name = GetStringValueOfAttribute wfNode "name"
+                                                        }
+                                            }
+                                        |> Seq.toList

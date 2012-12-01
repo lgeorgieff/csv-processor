@@ -15,7 +15,8 @@ let public main(args: array<string>): int =
     if args.Length <> 1 then
         raise(new ArgumentException("expected one argument defining the configuration file"))
     
-    let configuration: Configuration = Configuration.Parse args.[0]
+    let configurations: list<WorkflowConfiguration> = WorkflowConfiguration.Parse args.[0]
+    let configuration: WorkflowConfiguration = List.head configurations
 
     let readTask: Reader = new Reader((List.find(fun(taskConf: ITaskConfiguration) -> taskConf :? ReadConfiguration) configuration.Workflow) :?> ReadConfiguration, configuration.ColumnDefinitions)
     Console.WriteLine((readTask :> IGeneratorTask).Output.Length)

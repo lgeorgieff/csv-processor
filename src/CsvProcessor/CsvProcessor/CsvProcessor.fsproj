@@ -48,6 +48,7 @@
     <Compile Include="Reader.fs" />
     <Compile Include="Writer.fs" />
     <Compile Include="GenericTask.fs" />
+    <Compile Include="Workflow.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>

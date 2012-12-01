@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<cf-result-viewer xmlns="http://ztt.fh-worms.de/georgieff/text-analytics/">
-  <workflow>
+<csv-module xmlns="http://ztt.fh-worms.de/georgieff/text-analytics/">
+  <workflow name="test-workflow">
     <column-definitions>
       <column name="unit id"/>
       <column name="created at"/>
@@ -27,7 +27,7 @@
       <column name="your coice gold"/>
       <column name="ys"/>
     </column-definitions>
-    <read-task task-name="cvs reader">
+    <read-task name="cvs reader">
       <file path="..\..\Identify Hyponymous Collections.csv"/>
       <split char=","/>
       <quote char='"'/>
@@ -35,7 +35,7 @@
       <trim-whitespace-start value="true"/>
       <trim-whitespace-end value="true"/>
     </read-task>
-    <write-task task-name="printer" previous-task="cvs reader">
+    <write-task name="printer" previous-task="cvs reader">
       <!-- <file path=""/> --> <!-- default is console -->
       <file path="tmp.txt"/>
       <column ref="unit id" as="unit id"/>
@@ -66,11 +66,11 @@
       <meta-quote char='\'/>
       <file-mode value='create'/> <!-- create, create-new, append, open, open-or-create -->
     </write-task>
-    <generic-task task-name="usa filter" previous-task="printer">
+    <generic-task name="usa filter" previous-task="printer">
       <line-operation identifier="country = usa"/> <!-- either line-operation or document operation muest be set -->
     </generic-task>
-    <generic-task task-name="even row filter" previous-task="usa filter">
+    <generic-task name="even row filter" previous-task="usa filter">
       <document-operation identifier="line position % 2 = 0"/>
     </generic-task>
   </workflow>
-</cf-result-viewer>
+</csv-module>
