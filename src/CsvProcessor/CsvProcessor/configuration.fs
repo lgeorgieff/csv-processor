@@ -25,6 +25,7 @@ type public ReadConfiguration = { FilePath: string
                                   TaskName: string
                                 } interface ITaskConfiguration with
                                     member this.TaskName: string = this.TaskName
+                                  interface IGeneratorTaskConfiguration
 
 /// <summary>A task representing the printing operation on screen.
 /// ColumnMappings: the mapping between incoming columns and outgoing columns.
@@ -52,6 +53,8 @@ type public WriteConfiguration = { ColumnMappings: ColumnMappings
                                    FileMode: FileMode
                                  } interface ITaskConfiguration with
                                     member this.TaskName: string = this.TaskName
+                                   interface IConsumerTaskConfiguration with
+                                    member this.PreviousTask: string = this.PreviousTask
 
 /// <summary>A configuration class representing configuration settings for
 /// generic tasks.
@@ -68,6 +71,9 @@ type public GenericTaskConfiguration = { LineOperation: option<string>
                                          TaskName: string
                                        } interface ITaskConfiguration with
                                             member this.TaskName: string = this.TaskName
+                                         interface IConsumerTaskConfiguration with
+                                            member this.PreviousTask: string = this.PreviousTask
+                                         interface IGeneratorTaskConfiguration
 
 /// <summary>Reads the xml configuration file fpor this application
 /// and returns a list of tuples that expresses the column name
@@ -231,29 +237,52 @@ let private parseGenericTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): Gene
 /// <summary>Transforms all xml nodes representing tasks to the corresponding record types.</summary>
 let private getTasks(workflow: XmlNode) (xnsm: XmlNamespaceManager): list<ITaskConfiguration> =
     let children: XmlNodeList = workflow.SelectNodes(XPATH_TASKS, xnsm)
-    seq { for taskNode in children do
-            yield match (taskNode.LocalName, taskNode.NamespaceURI) with
-                    | ("write-task", CONFIG_NAMESPACE) -> (parseWriteTask taskNode xnsm) :> ITaskConfiguration
-                    | ("read-task", CONFIG_NAMESPACE) -> (parseReadTask taskNode xnsm) :> ITaskConfiguration
-                    | ("generic-task", CONFIG_NAMESPACE) -> (parseGenericTask taskNode xnsm) :> ITaskConfiguration
-                    | _ -> raise(new ConfigurationException("Element " + taskNode.Name + " not allowed here"))
-    } |> Seq.toList
-
+    let results: list<ITaskConfiguration> =
+        seq { for taskNode in children do
+                yield match (taskNode.LocalName, taskNode.NamespaceURI) with
+                        | ("write-task", CONFIG_NAMESPACE) -> (parseWriteTask taskNode xnsm) :> ITaskConfiguration
+                        | ("read-task", CONFIG_NAMESPACE) -> (parseReadTask taskNode xnsm) :> ITaskConfiguration
+                        | ("generic-task", CONFIG_NAMESPACE) -> (parseGenericTask taskNode xnsm) :> ITaskConfiguration
+                        | _ -> raise(new ConfigurationException("Element " + taskNode.Name + " not allowed here"))
+            } |> Seq.toList
+    let duplicates: list<ITaskConfiguration> =
+        CheckForDuplicates (fun(left: ITaskConfiguration) (right: ITaskConfiguration) -> left.TaskName = right.TaskName) results
+    if List.length duplicates > 0 then
+        raise(new ConfigurationException("Task must have unique names, but found the following duplicates: " + ListToString duplicates))
+    results
 
 /// <summary>Represents the entire application configuration.</summary>
 type public WorkflowConfiguration = { ColumnDefinitions: list<ColumnDefinition>
                                       Workflow: list<ITaskConfiguration>
                                       Name: string
-                                    } with 
+                                    } with
+                                    /// <summary>parses a workflow element and returns a corresponding
+                                    /// WorkflowConfiguration object.</summary>
+                                    static member private parseWorkflowConfiguration(workflowNode: XmlNode) (xnsm: XmlNamespaceManager): WorkflowConfiguration =
+                                        { WorkflowConfiguration.ColumnDefinitions = getColumnDefinitions workflowNode xnsm
+                                          WorkflowConfiguration.Workflow = getTasks workflowNode xnsm
+                                          WorkflowConfiguration.Name = GetStringValueOfAttribute workflowNode "name"
+                                        }
                                     /// <summary>Returns a Configuration instance from the passed
-                                    /// xml configuration file.</summary>
+                                    /// xml configuration file for each existing configuration element.</summary>
                                     static member public Parse(filePath: string): list<WorkflowConfiguration> =
                                         let dom: XmlDocument = new XmlDocument()
                                         let xnsm: XmlNamespaceManager = new XmlNamespaceManager(dom.NameTable)
-                                        xnsm.AddNamespace("appns", CONFIG_NAMESPACE)
+                                        xnsm.AddNamespace(CONFIG_NAMESPACE_PREFIX, CONFIG_NAMESPACE)
                                         dom.Load(filePath)
                                         MapXmlNodeList(fun (workflowNode: XmlNode) ->
-                                            { WorkflowConfiguration.ColumnDefinitions = getColumnDefinitions workflowNode xnsm
-                                              WorkflowConfiguration.Workflow = getTasks workflowNode xnsm
-                                              WorkflowConfiguration.Name = GetStringValueOfAttribute workflowNode "name"
-                                            }) (dom.SelectNodes(XPATH_WORKFLOWS, xnsm))
+                                            WorkflowConfiguration.parseWorkflowConfiguration workflowNode xnsm) (dom.SelectNodes(XPATH_WORKFLOWS, xnsm))
+                                    /// <summary>Returns a Configuration instance from the passed xml configuration
+                                    /// file for the workflow element declaring the passed workflow name.</summary>
+                                    static member public Parse((filePath: string), (workflowName: string)): WorkflowConfiguration =
+                                        let dom: XmlDocument = new XmlDocument()
+                                        let xnsm: XmlNamespaceManager = new XmlNamespaceManager(dom.NameTable)
+                                        xnsm.AddNamespace(CONFIG_NAMESPACE_PREFIX, CONFIG_NAMESPACE + "[@name=\"" + workflowName + "\"]")
+                                        dom.Load(filePath)
+                                        let results: list<WorkflowConfiguration> =
+                                            MapXmlNodeList(fun (workflowNode: XmlNode) ->
+                                                WorkflowConfiguration.parseWorkflowConfiguration workflowNode xnsm) (dom.SelectNodes(XPATH_WORKFLOWS, xnsm))
+                                        if List.length results <> 1 then
+                                            raise(new ConfigurationException("The configuration file must contain exactly one workflow element with the name \"" + workflowName + "\", but contains: " + (List.length results).ToString()))
+                                        else
+                                            List.head results

@@ -37,6 +37,12 @@ module public Exceptions =
         new (message: string) = GenericOperationException(message, null)
         new () = GenericOperationException(null, null)
 
+    /// <summary>Should be thrown if an operation of a CSV.Core.Tree module fails.</summary>
+    type public TreeNodeException(message: string, innerException: Exception) =
+        inherit Exception(message, innerException)
+        new (message: string) = TreeNodeException(message, null)
+        new () = TreeNodeException(null, null)
+
 module public Utilities =
     module public List =
         /// <summary>Transform each item of the list to a tuple of the item itself and
@@ -97,6 +103,44 @@ module public Utilities =
                         raise(new InvalidOperationException())) [] lst
                 |> List.filter(fun(_, (right: option<'t>)) -> right.IsSome)
                 |> List.map(fun((left: 't), (right: option<'t>)) -> (left, right.Value))
+
+        /// <summary>A helper function that returns a duplicate free copy of the
+        /// passed list. Each element is compared by the function comparison.</summary>
+        let rec private removeDuplicates(comparison: 'a -> 'a -> bool) (lst: list<'a>) (accumulator: list<'a>): list<'a> =
+            if lst = [] then
+                accumulator
+            elif List.exists (comparison (List.head lst)) accumulator then
+                removeDuplicates comparison (List.tail lst) accumulator
+            else
+                removeDuplicates comparison (List.tail lst) (accumulator @ [List.head lst])
+
+        /// <summary>Returns a duplicate free copy of the passed list.
+        /// Each element is compared by the function comparison.</summary>
+        let public RemoveDuplicates(comparison: 'a -> 'a -> bool) (lst: list<'a>): list<'a> =
+            removeDuplicates comparison lst []
+
+        /// <summary>Returns a list of elements that are duplicate occurrences
+        /// in the passed list. The duplicate filtering is daone by the
+        /// function value comparison.</summary>
+        let public CheckForDuplicates(comparison: 'a -> 'a -> bool) (lst: list<'a>): list<'a> =
+            List.map(fun(left: 'a) ->  let filteredItems: list<'a> = List.filter(fun(right: 'a) -> comparison left right) lst
+                                       if List.length filteredItems > 1 then
+                                            Some filteredItems
+                                       else
+                                            None) lst
+            |> List.filter Option.isSome
+            |> List.map Option.get
+            |> List.map List.head
+            |> RemoveDuplicates comparison
+
+        /// <summary>Returns a string representing the passed list of the form
+        /// [item1; item2; ...; itemN].</summary>
+        let public ListToString(lst: list<'a>): string =
+            let result: string = List.fold(fun(acc: string) (item: 'a) -> if acc = "" then
+                                                                           item.ToString()
+                                                                          else
+                                                                            acc + "; " + item.ToString()) "" lst
+            "[" + result + "]"
 
     module public Xml =
         /// <summary>Returns a list of strings that represent the attribute values of the passed
@@ -296,10 +340,83 @@ module public Utilities =
                 else
                     this
 
+module public Tree =
+    open Exceptions
+
+    /// <summary>Represents a generic tree node that can be used
+    /// to structure an n-ary tree object.</summary>
+    type public TreeNode<'a when 'a : equality> =
+        | Leaf
+        | Node of 'a * list<TreeNode<'a>> with
+
+        /// <summary>Returns true if the TreeNode instance is TreeNode.Leaf.
+        /// Otherwise the return value is false.</summary>
+        member public this.isLeaf: bool = match this with
+                                            | Leaf -> true
+                                            | _ -> false
+
+        /// <summary>Returns true if the TreeNode instance is TreeNode.Node.
+        /// Otherwise the return value is false.</summary>
+        member public this.isNode: bool = match this with
+                                            | Node(_, _) -> true
+                                            | _ -> false
+
+        /// <summary>Returns None if the TreeNode is a TreeNode.Leaf value.
+        /// Otherwise the return value is an option containing the node's
+        /// current value and the next level Nodes.</summary>
+        member public this.Value: option<'a * list<TreeNode<'a>>> = match this with
+                                                                        | Node(a, b) -> Some(a, b)
+                                                                        | _ -> None
+
+        /// <summary>Returns the actual value of a TreeNode.</summary>
+        /// <exception cref="CSV.Core.Exceptions">Is thrown if the TreeNode is
+        /// a TreeNode.LEaf value.</exception>
+        member public this.CurrentValue: 'a = if this.Value.IsNone then
+                                                raise(new TreeNodeException("A leaf has no value!"))
+                                              else
+                                                fst (this.Value.Value)
+
+        /// <summary>Returns a list of the actual values of the direct successor nodes.</summary>
+        /// <exception cref="CSV.Core.Exceptions">Is thrown if the TreeNode is
+        /// a TreeNode.LEaf value.</exception>
+        member public this.NextValues: list<'a> = if this.Value.IsNone then
+                                                    raise(new TreeNodeException("A leaf has no successors!"))
+                                                  else
+                                                    List.map(fun(node: TreeNode<'a>) -> node.Value) (snd(this.Value.Value))
+                                                    |> List.filter Option.isSome
+                                                    |> List.map Option.get
+                                                    |> List.map fst
+
+        /// <summary>Returns an option containing the first node that contains the passed value
+        /// as node value. If no such node is matched, the return value is None.</summary>
+        member public this.FindNode(item: 'a): option<TreeNode<'a>> =
+            if this.isLeaf then
+                None
+            elif this.CurrentValue = item then
+                None
+            else
+                List.tryFind(fun(node: TreeNode<'a>) -> (node.FindNode item).IsSome) (snd this.Value.Value)
+
+            
+                
+
+
 module public Model =
-    /// <summary>The basic Interface for tasks.<summary>
+    /// <summary>The basic Interface for task configurations.<summary>
     type public ITaskConfiguration =
         abstract member TaskName: string with get
+
+    /// <summary>The basic interface for task configurations
+    /// that gelong to tasks that generates data.</summary>
+    type public IGeneratorTaskConfiguration =
+        inherit ITaskConfiguration
+
+    /// <summary>The basic interface for task configurations
+    /// that belong to tasks that consume data and so depend
+    /// on prior tasks.</summary>
+    type public IConsumerTaskConfiguration =
+        inherit ITaskConfiguration
+        abstract member PreviousTask: string with get
 
     /// <summary>Represents a column definition made of a column name and
     /// its position/index in a line.</summary>
