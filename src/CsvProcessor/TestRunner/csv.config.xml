@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
-<csv-module xmlns="http://ztt.fh-worms.de/georgieff/text-analytics/">
+<csv-processor xmlns="http://ztt.fh-worms.de/georgieff/csv/">
   <workflow name="test-workflow">
     <column-definitions>
       <column name="unit id"/>
@@ -73,4 +73,4 @@
       <document-operation identifier="line position % 2 = 0"/>
     </generic-task>
   </workflow>
-</csv-module>
+</csv-processor>
