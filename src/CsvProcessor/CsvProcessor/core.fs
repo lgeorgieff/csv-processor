@@ -37,11 +37,11 @@ module public Exceptions =
         new (message: string) = GenericOperationException(message, null)
         new () = GenericOperationException(null, null)
 
-    /// <summary>Should be thrown if an operation of a CSV.Core.Tree module fails.</summary>
-    type public TreeNodeException(message: string, innerException: Exception) =
+    /// <summary>Should be thrown if any operation of a CSV.Workflow.Workflow class fails.</summary>
+    type public WorkflowException(message: string, innerException: Exception) =
         inherit Exception(message, innerException)
-        new (message: string) = TreeNodeException(message, null)
-        new () = TreeNodeException(null, null)
+        new (message: string) = WorkflowException(message, null)
+        new () = WorkflowException(null, null)
 
 module public Utilities =
     module public List =
@@ -141,6 +141,20 @@ module public Utilities =
                                                                           else
                                                                             acc + "; " + item.ToString()) "" lst
             "[" + result + "]"
+
+        /// <summary>Returns a list containing elements that are available in both passed lists.</summary>
+        let public Intersection(list1: list<'a> when 'a : equality) (list2: list<'a> when 'a : equality): list<'a> when 'a : equality =
+            List.filter(fun(item1: 'a) -> List.exists(fun(item2: 'a) -> item1 = item2) list1) list2
+
+        /// <summary>Returns a list containing elements that are available in only
+        /// one of the passed lists.</summary>
+        let public Difference(list1: list<'a> when 'a : equality) (list2: list<'a> when 'a : equality): list<'a> when 'a : equality =
+            (List.filter(fun(item1: 'a) -> not(List.exists(fun(item2: 'a) -> item1 = item2) list1)) list2) @
+                (List.filter(fun(item1: 'a) -> not(List.exists(fun(item2: 'a) -> item1 = item2) list2)) list1)
+
+        /// <summary>Returns a copy of the passed list without occurrences of the passed item.</summary>
+        let public Remove(item: 'a when 'a : equality) (lst: list<'a> when 'a : equality): list<'a> when 'a : equality =
+            List.filter(fun(elem: 'a) -> elem <> item) lst
 
     module public Xml =
         /// <summary>Returns a list of strings that represent the attribute values of the passed
@@ -340,67 +354,6 @@ module public Utilities =
                 else
                     this
 
-module public Tree =
-    open Exceptions
-
-    /// <summary>Represents a generic tree node that can be used
-    /// to structure an n-ary tree object.</summary>
-    type public TreeNode<'a when 'a : equality> =
-        | Leaf
-        | Node of 'a * list<TreeNode<'a>> with
-
-        /// <summary>Returns true if the TreeNode instance is TreeNode.Leaf.
-        /// Otherwise the return value is false.</summary>
-        member public this.isLeaf: bool = match this with
-                                            | Leaf -> true
-                                            | _ -> false
-
-        /// <summary>Returns true if the TreeNode instance is TreeNode.Node.
-        /// Otherwise the return value is false.</summary>
-        member public this.isNode: bool = match this with
-                                            | Node(_, _) -> true
-                                            | _ -> false
-
-        /// <summary>Returns None if the TreeNode is a TreeNode.Leaf value.
-        /// Otherwise the return value is an option containing the node's
-        /// current value and the next level Nodes.</summary>
-        member public this.Value: option<'a * list<TreeNode<'a>>> = match this with
-                                                                        | Node(a, b) -> Some(a, b)
-                                                                        | _ -> None
-
-        /// <summary>Returns the actual value of a TreeNode.</summary>
-        /// <exception cref="CSV.Core.Exceptions">Is thrown if the TreeNode is
-        /// a TreeNode.LEaf value.</exception>
-        member public this.CurrentValue: 'a = if this.Value.IsNone then
-                                                raise(new TreeNodeException("A leaf has no value!"))
-                                              else
-                                                fst (this.Value.Value)
-
-        /// <summary>Returns a list of the actual values of the direct successor nodes.</summary>
-        /// <exception cref="CSV.Core.Exceptions">Is thrown if the TreeNode is
-        /// a TreeNode.LEaf value.</exception>
-        member public this.NextValues: list<'a> = if this.Value.IsNone then
-                                                    raise(new TreeNodeException("A leaf has no successors!"))
-                                                  else
-                                                    List.map(fun(node: TreeNode<'a>) -> node.Value) (snd(this.Value.Value))
-                                                    |> List.filter Option.isSome
-                                                    |> List.map Option.get
-                                                    |> List.map fst
-
-        /// <summary>Returns an option containing the first node that contains the passed value
-        /// as node value. If no such node is matched, the return value is None.</summary>
-        member public this.FindNode(item: 'a): option<TreeNode<'a>> =
-            if this.isLeaf then
-                None
-            elif this.CurrentValue = item then
-                None
-            else
-                List.tryFind(fun(node: TreeNode<'a>) -> (node.FindNode item).IsSome) (snd this.Value.Value)
-
-            
-                
-
-
 module public Model =
     /// <summary>The basic Interface for task configurations.<summary>
     type public ITaskConfiguration =
@@ -477,6 +430,7 @@ module public Model =
         
     /// <summary>The baisc interface for all tasks that get an input and process it.</summary>
     type public IConsumerTask =
+        inherit ITask
         /// <summary>The name of the previous task which results are used as input
         /// data for this task. The task name is used as a reference.</summary>
         abstract member PreviousTask: string with get
@@ -487,5 +441,6 @@ module public Model =
 
     /// <summary>The basic interface for all tasks that produces data.</summary>
     type public IGeneratorTask =
+        inherit ITask
         /// <summary>Realizes a getter that offers the result data of a Task.</summary>
         abstract member Output: Lines with get

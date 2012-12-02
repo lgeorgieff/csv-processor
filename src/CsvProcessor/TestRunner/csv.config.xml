@@ -27,7 +27,7 @@
       <column name="your coice gold"/>
       <column name="ys"/>
     </column-definitions>
-    <read-task name="cvs reader">
+    <read-task name="csv reader">
       <file path="..\..\Identify Hyponymous Collections.csv"/>
       <split char=","/>
       <quote char='"'/>
@@ -35,7 +35,7 @@
       <trim-whitespace-start value="true"/>
       <trim-whitespace-end value="true"/>
     </read-task>
-    <write-task name="printer" previous-task="cvs reader">
+    <write-task name="printer" previous-task="even row filter">
       <!-- <file path=""/> --> <!-- default is console -->
       <file path="tmp.txt"/>
       <column ref="unit id" as="unit id"/>
@@ -66,7 +66,7 @@
       <meta-quote char='\'/>
       <file-mode value='create'/> <!-- create, create-new, append, open, open-or-create -->
     </write-task>
-    <generic-task name="usa filter" previous-task="printer">
+    <generic-task name="usa filter" previous-task="csv reader">
       <line-operation identifier="country = usa"/> <!-- either line-operation or document operation muest be set -->
     </generic-task>
     <generic-task name="even row filter" previous-task="usa filter">
