@@ -12,7 +12,7 @@ let public CONFIG_NAMESPACE_PREFIX: string = "appns"
 
 /// <summary>The XPATH expression for getting all workflow elements that are direct
 /// children of the root element csv-module.</summary>
-let public XPATH_WORKFLOWS: string = "/" + CONFIG_NAMESPACE_PREFIX + ":csv-processor/" + CONFIG_NAMESPACE_PREFIX + ":workflow"
+let public XPATH_WORKFLOWS: string = "/" + CONFIG_NAMESPACE_PREFIX + ":csv-job/" + CONFIG_NAMESPACE_PREFIX + ":workflow"
 
 /// <summary>The XPATH expression for getting all ReadTask elements
 /// of a workflow element.</summary>
