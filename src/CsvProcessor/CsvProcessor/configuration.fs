@@ -99,6 +99,15 @@ let private getCharFromAttribute(xmlNode: XmlNode) (xnsm: XmlNamespaceManager) (
     else
         tmp.Value.[0]
 
+/// <summary>Returns a list with all previos workflows of the passed workflow node.</summary>
+let private getWorkflowPredecessors(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): list<string> =
+    let values: option<string> = GetStringValueOfOptionalAttribute xmlNode "previous-workflows"
+    if values.IsNone then
+        []
+    else
+        Array.map(fun(item: string) -> item.Trim()) (values.Value.Split([|','|]))
+        |> Array.toList
+
 /// <summary>Returns the character representing the separator between several values.</summary>
 let private getSplitChar(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): char =
     getCharFromAttribute xmlNode xnsm (CONFIG_NAMESPACE_PREFIX + ":split/@char")
@@ -255,6 +264,7 @@ let private getTasks(workflow: XmlNode) (xnsm: XmlNamespaceManager): list<ITaskC
 type public WorkflowConfiguration = { ColumnDefinitions: list<ColumnDefinition>
                                       Workflow: list<ITaskConfiguration>
                                       Name: string
+                                      PreviousWorkflows: list<string>
                                     } with
                                     /// <summary>parses a workflow element and returns a corresponding
                                     /// WorkflowConfiguration object.</summary>
@@ -262,6 +272,7 @@ type public WorkflowConfiguration = { ColumnDefinitions: list<ColumnDefinition>
                                         { WorkflowConfiguration.ColumnDefinitions = getColumnDefinitions workflowNode xnsm
                                           WorkflowConfiguration.Workflow = getTasks workflowNode xnsm
                                           WorkflowConfiguration.Name = GetStringValueOfAttribute workflowNode "name"
+                                          WorkflowConfiguration.PreviousWorkflows = getWorkflowPredecessors workflowNode xnsm
                                         }
                                     /// <summary>Returns a Configuration instance from the passed
                                     /// xml configuration file for each existing configuration element.</summary>

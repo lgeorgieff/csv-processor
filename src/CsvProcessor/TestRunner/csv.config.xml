@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <csv-job xmlns="http://ztt.fh-worms.de/georgieff/csv/">
+  <!-- a workflow may have an attribute previous-workflows with a coma separated list of workflow names -->
   <workflow name="test-workflow">
     <column-definitions>
       <column name="unit id"/>

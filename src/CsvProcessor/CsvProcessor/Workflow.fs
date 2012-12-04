@@ -6,9 +6,18 @@ open CSV.Core.Utilities.List
 open CSV.Core.Exceptions
 open CSV.Tasks
 
+/// <summary>Throws an ConfigurationExcdetion when a Task is confifgured to be a
+/// predeccors of multiple tasks.</summary>
+let private checkForMultipleTaskReferences(taskConfigurations: list<ITaskConfiguration>): Unit =
+    List.iter(fun(conf: ITaskConfiguration) ->
+        if List.length(List.filter(fun(item: ITaskConfiguration) ->
+            item :? IConsumerTaskConfiguration && (item :?> IConsumerTaskConfiguration).PreviousTask = conf.TaskName) taskConfigurations) > 1 then
+                raise(new ConfigurationException("the task " + conf.TaskName + " has multiple successors"))) taskConfigurations
+
 /// <summary>A helper function that enables creating ordered lists of task configurations
 /// based on the properties "PreviousTask" and "TaskName".</summary>
 let private createTaskChain(taskConfigurations: list<ITaskConfiguration>): list<ITaskConfiguration> =
+    checkForMultipleTaskReferences taskConfigurations
     let startTasks: list<ITaskConfiguration> =
         List.filter(fun(taskConf: ITaskConfiguration) -> not(taskConf :? IConsumerTaskConfiguration)) taskConfigurations
     if List.length startTasks <> 1 then
@@ -50,7 +59,7 @@ type public Workflow(configuration: WorkflowConfiguration) =
 
     /// <summary>Returns the final result of this workflow. If there is no result,
     /// e.g. the last task is a WriterTask, the result is none.</summary>
-    member public this.Result = if result.IsNone then
+    member public this.Output = if result.IsNone then
                                     this.ProcessTasks()
                                 result
 
@@ -70,6 +79,9 @@ type public Workflow(configuration: WorkflowConfiguration) =
 
     /// <summary>A getter for requesting the workflow's name.</summary>
     member public this.WorkflowName: string = configuration.Name
+
+    /// <summary>A getter for requesting the workflow predecessors of this workflows.</summary>
+    member public this.PreviousWorkflows: list<string> = configuration.PreviousWorkflows
 
 /// <summary>Returns a list of Workflow instances corresponding to the
 /// configuration file described by the passed file path.</summary>

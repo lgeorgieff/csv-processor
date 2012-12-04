@@ -170,10 +170,20 @@ module public Utilities =
             List.zip (GetAttributesFromNodes elements attributeName1) (GetAttributesFromNodes elements attributeName2)
 
         /// <summary>Returns the string value of the passed xml node that is stored by the
-        /// attribute with the name specified by attributeName.</summary>
-        let public GetStringValueOfAttribute(xmlNode: XmlNode) (attributeName: string): string =
+        /// attribute with the name specified by attributeName within an option.
+        /// If the specified attribute is non-existent, the return value is None.</summary>
+        let public GetStringValueOfOptionalAttribute(xmlNode: XmlNode) (attributeName: string): option<string> =
             let tmp: XmlNode = xmlNode.SelectSingleNode("@" + attributeName)
             if tmp = null then
+                None
+            else
+                Some(tmp.Value)
+
+        /// <summary>Returns the string value of the passed xml node that is stored by the
+        /// attribute with the name specified by attributeName.</summary>
+        let public GetStringValueOfAttribute(xmlNode: XmlNode) (attributeName: string): string =
+            let tmp: option<string> = GetStringValueOfOptionalAttribute xmlNode attributeName
+            if tmp.IsNone then
                 raise(new Exceptions.ConfigurationException("The attribute \"" + attributeName + "\" is missing"))
             else
                 tmp.Value
