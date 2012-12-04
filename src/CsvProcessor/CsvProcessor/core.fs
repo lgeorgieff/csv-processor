@@ -44,6 +44,24 @@ module public Exceptions =
         new () = WorkflowException(null, null)
 
 module public Utilities =
+    module public DotNet =
+        open System.Reflection
+
+        /// <summary>A stub class for being able to request the assembly
+        /// information of this DLL.</summary>
+        type private StubClass() =
+            class
+            end
+
+        /// <summary>Returns an Assembly instance representing this DLL.</summary>
+        let public GetAssembly(): Assembly =
+            Assembly.GetAssembly((new StubClass()).GetType())
+
+        /// <summary>Returns a FilStream containing the xml schme file for the
+        /// xml configuration.</summary>
+        let public GetXmlSchemaStream(): System.IO.FileStream =
+            GetAssembly().GetFile(CSV.Constants.CONFIGURATION_SCHEMA_FILE_NAME)
+
     module public List =
         /// <summary>Transform each item of the list to a tuple of the item itself and
         /// an index of the item in the list.</summary>
