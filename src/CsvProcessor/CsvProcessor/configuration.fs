@@ -105,8 +105,7 @@ let private getWorkflowPredecessors(xmlNode: XmlNode) (xnsm: XmlNamespaceManager
     if values.IsNone then
         []
     else
-        Array.map(fun(item: string) -> item.Trim()) (values.Value.Split([|','|]))
-        |> Array.toList
+        Array.toList(values.Value.Split([|' '|]))
 
 /// <summary>Returns the character representing the separator between several values.</summary>
 let private getSplitChar(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): char =
@@ -292,22 +291,16 @@ type public WorkflowConfiguration =
     /// <summary>Returns a Configuration instance from the passed
     /// xml configuration file for each existing configuration element.</summary>
     static member public Parse(filePath: string): list<WorkflowConfiguration> =
-        let dom: XmlDocument = new XmlDocument()
-        let xnsm: XmlNamespaceManager = new XmlNamespaceManager(dom.NameTable)
-        xnsm.AddNamespace(CONFIG_NAMESPACE_PREFIX, CONFIG_NAMESPACE)
-        dom.Load(filePath)
+        let (dom, xnsm): XmlDocument * XmlNamespaceManager = LoadXmlIntoDocument filePath
         MapXmlNodeList(fun (workflowNode: XmlNode) ->
             WorkflowConfiguration.parseWorkflowConfiguration workflowNode xnsm) (dom.SelectNodes(XPATH_WORKFLOWS, xnsm))
     /// <summary>Returns a Configuration instance from the passed xml configuration
     /// file for the workflow element declaring the passed workflow name.</summary>
     static member public Parse((filePath: string), (workflowName: string)): WorkflowConfiguration =
-        let dom: XmlDocument = new XmlDocument()
-        let xnsm: XmlNamespaceManager = new XmlNamespaceManager(dom.NameTable)
-        xnsm.AddNamespace(CONFIG_NAMESPACE_PREFIX, CONFIG_NAMESPACE + "[@name=\"" + workflowName + "\"]")
-        dom.Load(filePath)
+        let (dom, xnsm): XmlDocument * XmlNamespaceManager = LoadXmlIntoDocument filePath
         let results: list<WorkflowConfiguration> =
             MapXmlNodeList(fun (workflowNode: XmlNode) ->
-                WorkflowConfiguration.parseWorkflowConfiguration workflowNode xnsm) (dom.SelectNodes(XPATH_WORKFLOWS, xnsm))
+                WorkflowConfiguration.parseWorkflowConfiguration workflowNode xnsm) (dom.SelectNodes(XPATH_WORKFLOWS + "[@name=\"" + workflowName + "\"]", xnsm))
         if List.length results <> 1 then
             raise(new ConfigurationException("The configuration file must contain exactly one workflow element with the name \"" + workflowName + "\", but contains: " + (List.length results).ToString()))
         else

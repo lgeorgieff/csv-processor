@@ -33,3 +33,6 @@ let public XPATH_TASKS: string = XPATH_GENERIC_TASKS + " | " + XPATH_READ_TASKS 
 /// <summary>The XPATH expression for getting all name attributes from the
 /// column-definitions children of a workflow element.</summary>
 let public XPATH_COLUMN_DEFINITIONS_NAMES: string = CONFIG_NAMESPACE_PREFIX + ":column-definitions//" + CONFIG_NAMESPACE_PREFIX + ":column/@name"
+
+/// <summary>The file name of the xml schmea definition for the configuraiton file.</summary>
+let public CONFIGURATION_SCHEMA_FILE_NAME: string = "csv.config.xsd"

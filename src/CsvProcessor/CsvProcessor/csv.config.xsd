@@ -1,0 +1,212 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified"
+           elementFormDefault="qualified"
+           targetNamespace="http://ztt.fh-worms.de/georgieff/csv/"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:tns="http://ztt.fh-worms.de/georgieff/csv/">
+
+  <xs:simpleType name="character-type">
+    <xs:annotation>
+      <xs:documentation>Defines a character type that is actual a string with length 1</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:length value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="file-mode-type">
+    <xs:annotation>
+      <xs:documentation>Defines an enumeration type corresponding to the System.FileMode
+      enumeration type in .Net.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="Create"/>
+      <xs:enumeration value="CreateNew"/>
+      <xs:enumeration value="Append"/>
+      <xs:enumeration value="Open"/>
+      <xs:enumeration value="OpenOrCreate"/>
+      <xs:enumeration value="Truncate"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="column-definitions-type">
+    <xs:annotation>
+      <xs:documentation><![CDATA[ A column definition collection that contains
+      an ordered list of column definitions where each column defintion correponds
+      to the column with the same index of the column defintion and will have the
+      name defined by the corresponding column definition.
+      Example:
+      CSV line: col-1, col-2, col-3
+      column-definition: <column-definitions>
+      <column name="column 1"/>
+      <column name="column 2"/>
+      <column name="column 3"/>
+    </column-definitions>]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element maxOccurs="unbounded" name="column">
+        <xs:complexType>
+          <xs:attribute name="name" type="xs:string" use="required" />
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="read-task-type">
+    <xs:annotation>
+      <xs:documentation>Defines the type used for a reader task containing
+      the element "file" which defines the source file, the "split" character
+      which defines the character the splits columns, the "quote" character
+      which defines the character used to quote a column, the "meta-quote"
+      character which is used to quote the quote character, the "trim-whitespace-start"
+      and trim "whitespace-end" elements that are used to defines whether to trim a column's
+      value on the left or/and the right side. Additionally, the reader task requires
+      a name attribute to be identified.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="file">
+        <xs:complexType>
+          <xs:attribute name="path" type="xs:string" use="required" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="split">
+        <xs:complexType>
+          <xs:attribute name="char" type="tns:character-type" use="required" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="quote">
+        <xs:complexType>
+          <xs:attribute name="char" type="tns:character-type" use="required" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="meta-quote">
+        <xs:complexType>
+          <xs:attribute name="char" type="tns:character-type" use="required" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="trim-whitespace-start">
+        <xs:complexType>
+          <xs:attribute name="value" type="xs:boolean" use="required" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="trim-whitespace-end">
+        <xs:complexType>
+          <xs:attribute name="value" type="xs:boolean" use="required" />
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:ID" use="required" />
+  </xs:complexType>
+
+  <xs:complexType name="write-task-type">
+    <xs:annotation>
+      <xs:documentation>
+        Defines the type used for a writer task containing
+        the optional element "file" which defines the target file (if this element
+        is non-existent, the standard output is the target), the element "column" which defines
+        the target name and position of a source column, the "split" character
+        which defines the character the splits columns, the "quote" character
+        which defines the character used to quote a column, the "meta-quote"
+        character which is used to quote the quote character, the "trim-whitespace-start"
+        and trim "whitespace-end elements" that are used to defines whether to trim a column's
+        value on the left or/and the right side. Additionaly, the writer task requires
+        a name attribute to be identified. The reference to a previous task is contained as a
+        string representing the task name in the optional attribute previous task.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>      
+      <xs:element name="file" maxOccurs="1" minOccurs="0">
+        <xs:complexType>
+          <xs:attribute name="path" type="xs:string" use="required" />
+          <xs:attribute name="mode" type ="tns:file-mode-type" use="optional"/>
+        </xs:complexType>
+      </xs:element>
+      <xs:element maxOccurs="unbounded" name="column">
+        <xs:complexType>
+          <xs:attribute name="ref" type="xs:string" use="required" />
+          <xs:attribute name="as" type="xs:string" use="required" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="split">
+        <xs:complexType>
+          <xs:attribute name="char" type="tns:character-type" use="required" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="quote">
+        <xs:complexType>
+          <xs:attribute name="char" type="tns:character-type" use="required" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="meta-quote">
+        <xs:complexType>
+          <xs:attribute name="char" type="tns:character-type" use="required" />
+        </xs:complexType>
+      </xs:element>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:ID" use="required" />
+    <xs:attribute name="previous-task" type="xs:IDREF" use="optional" />
+  </xs:complexType>
+
+  <xs:complexType name="generic-task-type">
+    <xs:annotation>
+      <xs:documentation>
+        Defines the type used for a generic task containing
+        the one of the elements "document-operation" or "line-operation".
+        document-opration defines a function name that must be registered in code
+        before instantiating this generic task class. The function must operate
+        on the entire document, i.e. on the type Lines.
+        line-operation defines a function name that must be registered in code
+        before instantiating this generic task class. The function must operate
+        on a single line of a document, i.e. on the type Line. Finally, this task
+        requires a name and a reference to a previous task.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="document-operation">
+        <xs:complexType>
+          <xs:attribute name="identifier" type="xs:string" use="required" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="line-operation">
+        <xs:complexType>
+          <xs:attribute name="identifier" type="xs:string" use="required" />
+        </xs:complexType>
+      </xs:element>
+    </xs:choice>
+    <xs:attribute name="name" type="xs:ID" use="required" />
+    <xs:attribute name="previous-task" type="xs:IDREF" use="optional" />
+  </xs:complexType>
+
+  <xs:complexType name="workflow-type">
+    <xs:annotation>
+      <xs:documentation>Contains column defintions for setting the order and names
+      of columns. Further, an arbitrary amount of tasks must be defined where at least one
+      task must be present. Finally, the attribute name and previous-workflows are defined.
+      A workflow name is needed to reference a workflow, to model a job. The attribute
+      previous-workflows is a ist of workflow-names that are references
+      and predeccors of this workflow.</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="column-definitions" type="tns:column-definitions-type"/>
+      <xs:choice minOccurs="1" maxOccurs="unbounded">
+        <xs:element name="read-task" type="tns:read-task-type"/>
+        <xs:element name="write-task" type="tns:write-task-type"/>
+        <xs:element maxOccurs="unbounded" name="generic-task" type="tns:generic-task-type"/>
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:ID" use="required" />
+    <xs:attribute name="previous-workflows" type="xs:IDREFS" use="optional"/>
+  </xs:complexType>
+  
+  <xs:element name="csv-job">
+    <xs:annotation>
+      <xs:documentation>Models a csv job and contains an arbitrary amount of workflows &gt; 1.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="workflow" minOccurs="1" maxOccurs="unbounded" type="tns:workflow-type">
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

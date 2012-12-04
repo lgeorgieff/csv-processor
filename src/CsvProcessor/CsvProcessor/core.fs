@@ -2,6 +2,7 @@
 
 open System
 open System.Xml
+open System.Xml.Schema
 open System.IO
 
 module public Exceptions =
@@ -53,14 +54,18 @@ module public Utilities =
             class
             end
 
+        /// <summary>An object of the type StubClass tpo be used by Assembly.GetAssembly()
+        /// without defining this instance again and again.</summary>
+        let private assemblyStub: StubClass = new StubClass()
+
         /// <summary>Returns an Assembly instance representing this DLL.</summary>
         let public GetAssembly(): Assembly =
-            Assembly.GetAssembly((new StubClass()).GetType())
+            Assembly.GetAssembly(assemblyStub.GetType())
 
         /// <summary>Returns a FilStream containing the xml schme file for the
         /// xml configuration.</summary>
-        let public GetXmlSchemaStream(): System.IO.FileStream =
-            GetAssembly().GetFile(CSV.Constants.CONFIGURATION_SCHEMA_FILE_NAME)
+        let public GetXmlSchemaStream(): System.IO.Stream =
+            GetAssembly().GetManifestResourceStream(Constants.CONFIGURATION_SCHEMA_FILE_NAME)
 
     module public List =
         /// <summary>Transform each item of the list to a tuple of the item itself and
@@ -217,6 +222,26 @@ module public Utilities =
         /// operation arguments of type 'a.</summary>
         let public MapXmlNodeList(operation: XmlNode -> 'a) (nodes: XmlNodeList): list<'a> =
             mapXmlNodeList operation 0 [] nodes
+
+        /// <summary>The ValidationEventHandler for validating loaded xml files.</summary>
+        let private validationEventHandler(sender: obj) (e: ValidationEventArgs): Unit =
+            match e.Severity with
+                | XmlSeverityType.Warning -> Console.WriteLine("found a validation warning in the configuration xml file:\n" + e.Message)
+                | _ -> raise(new Exceptions.ConfigurationException("found a validation error in the configuration xml file in line " + e.Exception.LineNumber.ToString() + " at position " + e.Exception.LinePosition.ToString() + ":\n" + e.Exception.Message))
+
+        /// <summary>Loads the xml file defined by the passed xml file path. Finally, an XmlNamespaceManager
+        /// is defnined and the locaded xml file is validated against the embedded xml schema file.</summary>
+        let public LoadXmlIntoDocument(xmlFilePath: string): (XmlDocument * XmlNamespaceManager) =
+            let settings: XmlReaderSettings = new XmlReaderSettings();
+            settings.Schemas.Add(CSV.Constants.CONFIG_NAMESPACE, new XmlTextReader(DotNet.GetXmlSchemaStream())) |> ignore
+            settings.ValidationType <- ValidationType.Schema
+            let xmlReader: XmlReader = XmlReader.Create(xmlFilePath, settings)
+            let doc: XmlDocument = new XmlDocument()
+            let xnsm: XmlNamespaceManager = new XmlNamespaceManager(doc.NameTable)
+            xnsm.AddNamespace(CSV.Constants.CONFIG_NAMESPACE_PREFIX, CSV.Constants.CONFIG_NAMESPACE)
+            doc.Load(xmlReader)
+            doc.Validate(new ValidationEventHandler(validationEventHandler))
+            (doc, xnsm)
 
     module public IO =
         /// <summary>Reads the entire stream line by line and invokes lineProcessor on each line.
