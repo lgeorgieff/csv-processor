@@ -77,8 +77,8 @@ module public Utilities =
         /// <summary>Returns true if both lists contains the same items depending on the
         /// function comparison. The order of the list items does not matter.</summary>
         let public ListSame(left: list<'a>) (right: list<'a>) (comparison: 'a -> 'a -> bool): bool =
-            not (List.length left = List.length right &&
-                    List.map(fun(leftItem: 'a) -> List.exists(fun(rightItem: 'a) -> comparison leftItem rightItem) right) left
+            List.length left = List.length right &&
+                not(List.map(fun(leftItem: 'a) -> List.exists(fun(rightItem: 'a) -> comparison leftItem rightItem) right) left
                     |> List.exists(fun(result: bool) -> not result))
 
         /// <summary>Returns true if both lists own identical items and the order of all
