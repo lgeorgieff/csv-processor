@@ -76,14 +76,14 @@ module public Utilities =
     module public List =
         /// <summary>Returns true if both lists contains the same items depending on the
         /// function comparison. The order of the list items does not matter.</summary>
-        let public ListSame(left: list<'a>) (right: list<'a>) (comparison: 'a -> 'a -> bool): bool =
+        let public Same(left: list<'a>) (right: list<'a>) (comparison: 'a -> 'a -> bool): bool =
             List.length left = List.length right &&
                 not(List.map(fun(leftItem: 'a) -> List.exists(fun(rightItem: 'a) -> comparison leftItem rightItem) right) left
                     |> List.exists(fun(result: bool) -> not result))
 
         /// <summary>Returns true if both lists own identical items and the order of all
         /// items in both lists is the same.</summary>
-        let public ListStrictSame(left: list<'a>) (right: list<'a>) (comparison: 'a -> 'a -> bool): bool =
+        let public StrictSame(left: list<'a>) (right: list<'a>) (comparison: 'a -> 'a -> bool): bool =
             not(List.zip left right
                 |> List.map(fun((lft: 'a), (rgt: 'a)) -> comparison lft rgt)
                 |> List.exists(fun(result: bool) -> not result))
@@ -518,9 +518,9 @@ module public Model =
         else
             let colNames_1: list<string> = List.map(fun(cell: ICell) -> cell.Name) (List.head existingLines)
             let colNames_2: list<string> = List.map(fun(cell: ICell) -> cell.Name) (List.head newLines)
-            if Utilities.List.ListSame colNames_1 colNames_2 (fun(lft: string) (rgt: string) -> lft = rgt) then
+            if Utilities.List.Same colNames_1 colNames_2 (fun(lft: string) (rgt: string) -> lft = rgt) then
                 let sortedLines: Lines =
-                    (if Utilities.List.ListStrictSame colNames_1 colNames_2 (fun(lft: string) (rgt: string) -> lft = rgt) then
+                    (if Utilities.List.StrictSame colNames_1 colNames_2 (fun(lft: string) (rgt: string) -> lft = rgt) then
                         newLines
                      else
                         List.map(fun(line: Line) -> sortLine line colNames_1) newLines)
