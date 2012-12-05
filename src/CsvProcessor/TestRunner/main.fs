@@ -26,7 +26,7 @@ let public main(args: array<string>): int =
         FilterEachSecond (List.filter(fun(line: Line) -> not(IsHeaderLine line true)) lines) true))
 
     let workflows: list<Workflow> = GetWorkflows args.[0]
-    (List.head workflows).ProcessTasks()
+    //(List.head workflows).ProcessTasks()
 
     Console.WriteLine("press ENTER to quit")
     Console.ReadLine() |> ignore

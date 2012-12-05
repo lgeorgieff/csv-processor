@@ -41,10 +41,11 @@ let private createTaskChain(taskConfigurations: list<ITaskConfiguration>): list<
 /// can be requested.</summary>
 type public Workflow(configuration: WorkflowConfiguration) =
     let mutable result: option<Lines> = None
+    let mutable input: option<list<Lines>> = None
     new(configFile: string, workflowName: string) = Workflow(WorkflowConfiguration.Parse(configFile, workflowName))
 
     /// <summary>Can be called explecitly to run all tasks of this workflow.</summary>
-    member public this.ProcessTasks(): Unit =
+    member private this.ProcessTasks(): Unit =
         let lastTask: option<ITask> = 
             List.fold(fun(prev: option<ITask>) (current: ITask) ->
                 if prev.IsSome then
@@ -82,6 +83,14 @@ type public Workflow(configuration: WorkflowConfiguration) =
 
     /// <summary>A getter for requesting the workflow predecessors of this workflows.</summary>
     member public this.PreviousWorkflows: list<string> = configuration.PreviousWorkflows
+
+    /// <summary>Realizes a setter that takes the input data of a previous workflows to be processed
+    /// by this workflow. The processing of the input data is directly started when the 
+    /// property is set.</summary>
+    member public this.Input with set(value: list<Lines>) = if input.IsSome then
+                                                                raise(new PropertyAlreadySetException("The property Input can be set only ones"))
+                                                            input <- Some value
+                                                            this.ProcessTasks()
 
 /// <summary>Returns a list of Workflow instances corresponding to the
 /// configuration file described by the passed file path.</summary>

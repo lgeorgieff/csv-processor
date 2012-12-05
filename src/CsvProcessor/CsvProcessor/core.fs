@@ -44,6 +44,12 @@ module public Exceptions =
         new (message: string) = WorkflowException(message, null)
         new () = WorkflowException(null, null)
 
+    /// <summary>Should be thrown if any operation of during the merging of lines fails.</summary>
+    type public LineOperationException(message: string, innerException: Exception) =
+        inherit Exception(message, innerException)
+        new (message: string) = LineOperationException(message, null)
+        new () = LineOperationException(null, null)
+
 module public Utilities =
     module public DotNet =
         open System.Reflection
@@ -68,6 +74,20 @@ module public Utilities =
             GetAssembly().GetManifestResourceStream(Constants.CONFIGURATION_SCHEMA_FILE_NAME)
 
     module public List =
+        /// <summary>Returns true if both lists contains the same items depending on the
+        /// function comparison. The order of the list items does not matter.</summary>
+        let public ListSame(left: list<'a>) (right: list<'a>) (comparison: 'a -> 'a -> bool): bool =
+            not (List.length left = List.length right &&
+                    List.map(fun(leftItem: 'a) -> List.exists(fun(rightItem: 'a) -> comparison leftItem rightItem) right) left
+                    |> List.exists(fun(result: bool) -> not result))
+
+        /// <summary>Returns true if both lists own identical items and the order of all
+        /// items in both lists is the same.</summary>
+        let public ListStrictSame(left: list<'a>) (right: list<'a>) (comparison: 'a -> 'a -> bool): bool =
+            not(List.zip left right
+                |> List.map(fun((lft: 'a), (rgt: 'a)) -> comparison lft rgt)
+                |> List.exists(fun(result: bool) -> not result))
+
         /// <summary>Transform each item of the list to a tuple of the item itself and
         /// an index of the item in the list.</summary>
         let public AddIndexes(lst: list<'t>): list<'t * int> =
@@ -474,6 +494,58 @@ module public Model =
     /// <summary>A typedef for a list of Lines (list of lists of Cells) representing an entire CSV file.</summary>
     type public Lines = list<Line>
 
+    /// <summary>Sorts the cells in the passed line corresponding to the
+    /// passed column defintions which actually are names of the cells.
+    /// If there is any problem, e.g. a column defintion does not match
+    /// a LineOperationException os thrown.</summary>
+    let private sortLine(line: Line) (columnDefinitions: list<string>): Line =
+        if List.length line = List.length columnDefinitions then
+            try
+                List.map(fun(colDef: string) -> List.find(fun(cell: ICell) -> cell.Name = colDef) line) columnDefinitions
+            with
+                | :? System.Collections.Generic.KeyNotFoundException as err -> raise(new Exceptions.LineOperationException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!", err))
+        else
+            raise(new Exceptions.LineOperationException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!"))
+
+    /// <summary>A helper function for the funtion mergeListOfLines that merges
+    /// two instances of Lines to a single instance of the type Lines if the column
+    /// defintions are the same. Otherwise, a LineOperationException is thrown.</summary>
+    let private mergeLines (newLines: Lines) (existingLines: Lines): Lines =
+        if existingLines = [] then
+            newLines
+        elif newLines = [] then
+            existingLines
+        else
+            let colNames_1: list<string> = List.map(fun(cell: ICell) -> cell.Name) (List.head existingLines)
+            let colNames_2: list<string> = List.map(fun(cell: ICell) -> cell.Name) (List.head newLines)
+            if Utilities.List.ListSame colNames_1 colNames_2 (fun(lft: string) (rgt: string) -> lft = rgt) then
+                let sortedLines: Lines =
+                    (if Utilities.List.ListStrictSame colNames_1 colNames_2 (fun(lft: string) (rgt: string) -> lft = rgt) then
+                        newLines
+                     else
+                        List.map(fun(line: Line) -> sortLine line colNames_1) newLines)
+                    |> List.filter(fun(line: Line) -> not(IsHeaderLine line true))
+                existingLines @ sortedLines
+            else
+                raise(new Exceptions.LineOperationException("The lines " + newLines.ToString() + " cannot be merged with the lines " + existingLines.ToString() + " because the column defintions do not match:\n" + Utilities.List.ListToString colNames_1 + "\n" + Utilities.List.ListToString colNames_2))
+            
+
+    /// <summary>A helper function for MergeLines that recursivel merges the passed list
+    /// of lines with each other.</summary>
+    let rec private mergeListOfLines(listOfLines: list<Lines>) (accumulator: Lines): Lines =
+        if listOfLines = [] then
+            accumulator
+        else
+            mergeListOfLines (List.tail listOfLines) (mergeLines (List.head listOfLines) accumulator)
+
+    /// <summary>Merges the passed list of Lines objects and returns a single
+    /// instance of Lines. Each line must contain the same column defintions, i.e.
+    /// each line must contain the same amount of cells where the set of all cell
+    /// names is identical. The order of cells is ignored, the returned order is
+    /// identical to the order of cells in the first Lines instnace.</summary>
+    let public MergeLines(listOfLines: list<Lines>): Lines =
+        mergeListOfLines listOfLines []
+
     /// <summary>The basic interface for all implementation of Tasks.</summary>
     type public ITask =             
         /// <summary>The name of this task that can be used as a reference.</summary>
@@ -488,7 +560,7 @@ module public Model =
         /// data for this task. The task name is used as a reference.</summary>
         abstract member PreviousTask: string with get
         /// <summary>Realizes a setter that takes the input data of a Task to be processed.
-        /// The processing of the inout data is directly started when the 
+        /// The processing of the input data is directly started when the 
         /// property is set.</summary>
         abstract member Input: Lines with set
 
