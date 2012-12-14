@@ -6,6 +6,12 @@ open System.Xml.Schema
 open System.IO
 
 module public Exceptions =
+ /// <summary>Should be thrown if the read csv file is error-prone.</summary>
+    type public ParseException(message: string, innerException: Exception) =
+        inherit Exception(message, innerException)
+        new (message: string) = ParseException(message, null)
+        new () = ParseException(null, null)
+
     /// <summary>Should be thrown if the xml configuration for this application is invalid.</summary>
     type public ConfigurationException(message: string, innerException: Exception) =
         inherit Exception(message, innerException)
@@ -326,7 +332,10 @@ module public Utilities =
             let quoteRanges: list<int * int> =
                 let indexesOfQuotes = indexesOf str quote [] 0
                                       |> List.filter(fun(idx: int) -> not(isMetaQuoted str idx metaQuote))
-                List.zip(List.FilterEachSecond indexesOfQuotes true)(List.FilterEachSecond indexesOfQuotes false)
+                try
+                    List.zip(List.FilterEachSecond indexesOfQuotes true)(List.FilterEachSecond indexesOfQuotes false)
+                with
+                    | _ as err -> raise(new Exceptions.ParseException("An odd amount of quotations found, so a closing quotation is missing", err))
             if quoteRanges = [] then
                 indexesOfWhat
             else
