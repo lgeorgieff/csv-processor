@@ -258,15 +258,13 @@ module public Utilities =
         /// <summary>Loads the xml file defined by the passed xml file path. Finally, an XmlNamespaceManager
         /// is defnined and the locaded xml file is validated against the embedded xml schema file.</summary>
         let public LoadXmlIntoDocument(xmlFilePath: string): (XmlDocument * XmlNamespaceManager) =
-            let settings: XmlReaderSettings = new XmlReaderSettings();
-            settings.Schemas.Add(CSV.Constants.CONFIG_NAMESPACE, new XmlTextReader(DotNet.GetXmlSchemaStream())) |> ignore
-            settings.ValidationType <- ValidationType.Schema
-            let xmlReader: XmlReader = XmlReader.Create(xmlFilePath, settings)
             let doc: XmlDocument = new XmlDocument()
             let xnsm: XmlNamespaceManager = new XmlNamespaceManager(doc.NameTable)
             xnsm.AddNamespace(CSV.Constants.CONFIG_NAMESPACE_PREFIX, CSV.Constants.CONFIG_NAMESPACE)
-            doc.Load(xmlReader)
-            doc.Validate(new ValidationEventHandler(validationEventHandler))
+            doc.PreserveWhitespace <- true
+            doc.Load(xmlFilePath)
+            let schema: XmlSchema = XmlSchema.Read(DotNet.GetXmlSchemaStream(), validationEventHandler)
+            doc.Schemas.Add(schema) |> ignore
             (doc, xnsm)
 
     module public IO =
