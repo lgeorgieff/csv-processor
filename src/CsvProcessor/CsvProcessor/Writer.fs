@@ -25,7 +25,7 @@ type public Writer(configuration: WriteConfiguration) =
                         destinationWriter.WriteLine(resultingLine)
                     write (List.tail lines)
             let headerLine: string = this.GenerateHeaderLine configuration.ColumnMappings
-            if headerLine <> "" then
+            if headerLine <> "" && (FileMode.Append <> configuration.FileMode || FileMode.Append = configuration.FileMode && (configuration.FilePath.IsNone || (configuration.FilePath.IsSome && File.Exists(configuration.FilePath.Value) && (new FileInfo(configuration.FilePath.Value)).Length = 0L))) then
                 // write the new header line corresponding to the column mapping
                 destinationWriter.WriteLine(headerLine)
             write (input.Value)
@@ -56,7 +56,7 @@ type public Writer(configuration: WriteConfiguration) =
     /// None is returned.</summary>
     member private this.FileContainsHeader(filePath: string): option<string> =
         if File.Exists(filePath) then
-            let reader: StreamReader = new StreamReader(filePath)
+            use reader: StreamReader = new StreamReader(filePath)
             let rec readHeaderLine(): option<string> =
                 if reader.EndOfStream then
                     None
@@ -79,7 +79,7 @@ type public Writer(configuration: WriteConfiguration) =
     /// Note, if the configured file mode is not set to Append, the result is (true, None).</summary>
     member private this.CheckFileModeConstraints(): bool * option<string> =
         if configuration.FileMode = FileMode.Append && configuration.FilePath.IsSome && (this.FileContainsHeader configuration.FilePath.Value).IsSome then
-            if (this.FileContainsHeader configuration.FilePath.Value).Value = (this.GenerateHeaderLine configuration.ColumnMappings).Trim() then
+            if (this.FileContainsHeader configuration.FilePath.Value).Value = this.GenerateHeaderLine configuration.ColumnMappings then
                 (true, None)
             else
                 (false, this.FileContainsHeader configuration.FilePath.Value)

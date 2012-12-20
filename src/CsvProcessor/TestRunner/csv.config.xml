@@ -65,7 +65,7 @@
     </read-task>
     <write-task name="printer" previous-task="even-row-filter" column-mappings="final-columns">
       <!-- <file path="" mode="create"/> --> <!-- default is console --><!-- file-mode: create, create-new, append, open, open-or-create -->
-      <file path="tmp.txt" mode="Create"/>
+      <file path="tmp.txt" mode="Append"/>
       <split char="	"/>
       <quote char='"'/>
       <meta-quote char='\'/>
