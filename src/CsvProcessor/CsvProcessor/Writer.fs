@@ -23,10 +23,9 @@ type public Writer(configuration: WriteConfiguration) =
                                                     new StreamWriter(File.Open(destination.Value, configuration.FileMode))                                                
             let rec write(lines: Lines): Unit =
                 if lines <> [] then
-                    if not(IsHeaderLine (List.head lines) true) then // ignore header lines
-                        let resultingLine: string = this.LineToString(List.head lines)
-                        if resultingLine <> "" then // ignore empty lines
-                            destinationWriter.WriteLine(resultingLine)
+                    let resultingLine: string = this.LineToString(List.head lines)
+                    if resultingLine <> "" then // ignore empty lines
+                        destinationWriter.WriteLine(resultingLine)
                     write (List.tail lines)
             let headerLine: string = this.GenerateHeaderLine configuration.ColumnMappings
             if headerLine <> "" then
@@ -53,7 +52,6 @@ type public Writer(configuration: WriteConfiguration) =
             else
                 constructedLine + split.ToString() + valueToAdd) "" line
 
-
     /// <summary>Returns a string representing the passed instance of Line.</summary>
     static member public LineToString((line: Line), (split: char), (quote: char), (metaQuote: char), (trimWhitespaceStart: bool), (trimWhitespaceEnd: bool), (columnMappings: ColumnMappings)): string =
         let constructtedLine: Line =
@@ -64,7 +62,6 @@ type public Writer(configuration: WriteConfiguration) =
                     (List.find(fun(mapping: ColumnMapping) ->
                         mapping.Source.Name = cell.Name) columnMappings).Target.Index)
         Writer.Stringfy(constructtedLine, split, quote, metaQuote, trimWhitespaceStart, trimWhitespaceEnd)
-       
 
     /// <summary>Returns a string representing the passed instance of Line. All arguments, such as
     /// quote, split, meta-quote and columnMappings are taken of this object's configuration.</summary>

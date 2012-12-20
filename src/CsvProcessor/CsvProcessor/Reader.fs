@@ -33,7 +33,7 @@ type public Reader(configuration: ReadConfiguration, columnDefinitions: list<Col
         self.ReadFile()
     member private this.ReadFile(): Unit =
         use fs: StreamReader = new StreamReader(File.OpenRead(configuration.FilePath))
-        output <- ReadStream fs lineProcessor
+        output <- ReadStream fs lineProcessor |> List.filter(fun(line: Line) -> not(IsHeaderLine line false))
     interface ITask with
         override this.TaskName: string = configuration.TaskName
         override this.TaskConfiguration: ITaskConfiguration = configuration :> ITaskConfiguration
