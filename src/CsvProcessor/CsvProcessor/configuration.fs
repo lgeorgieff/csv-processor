@@ -75,19 +75,13 @@ type public GenericTaskConfiguration = { LineOperation: option<string>
                                             member this.PreviousTask: string = this.PreviousTask
                                          interface IGeneratorTaskConfiguration
 
-/// <summary>Reads the xml configuration file fpor this application
-/// and returns a list of tuples that expresses the column name
-/// and their position.</summary>
-let private getColumnDefinitions(workflow: XmlNode) (xnsm: XmlNamespaceManager): list<ColumnDefinition> =    
-    try
-        let colNames: XmlNodeList = workflow.SelectNodes(XPATH_COLUMN_DEFINITIONS_NAMES, xnsm)
-        seq{ for col in colNames do
-                yield col.Value
-        } |> Seq.toList
-        |> AddIndexes
-        |> List.map(fun((name: string), (index: int)) -> { ColumnDefinition.Name = name; ColumnDefinition.Index = index })
-    with
-    | _ as err -> raise(new ConfigurationException("the column-definitions could not be parsed", err))
+/// <summary>Returns the root csv-job element or throwns an ConfigurationException
+/// if the element cannot be returned.</summary>
+let private getCsvJob(elem: XmlNode) (xnsm: XmlNamespaceManager): XmlNode =
+    let nodes: XmlNodeList = elem.OwnerDocument.SelectNodes(XPATH_CSV_JOB, xnsm)
+    if nodes.Count <> 1 then
+        raise(new ConfigurationException("the configuration must the element csv-job exactly once as root element, but found: " + nodes.Count.ToString()))
+    nodes.[0]
 
 /// <summary>Returns the character contained in the passed xpath.</summary>
 let private getCharFromAttribute(xmlNode: XmlNode) (xnsm: XmlNamespaceManager) (xpath: string): char =
@@ -211,16 +205,45 @@ let private getFilePath(taskNode: XmlNode) (xnsm: XmlNamespaceManager): option<s
     else
         None
 
+/// <summary>Reads the xml configuration file fpor this application
+/// and returns a list of tuples that expresses the column name
+/// and their position.</summary>
+let private getColumnDefinitions(workflow: XmlNode) (xnsm: XmlNamespaceManager): list<ColumnDefinition> =
+    try
+        let defName: string = GetStringValueOfAttribute workflow "column-definitions"
+        let columnDefitionsNodes: XmlNodeList = (getCsvJob workflow xnsm).SelectNodes("/" + CONFIG_NAMESPACE_PREFIX + ":csv-job/" + CONFIG_NAMESPACE_PREFIX + ":column-definitions[@name='" + defName + "']", xnsm)
+        if columnDefitionsNodes.Count <> 1 then
+            raise(new ConfigurationException("The element \"column-definitions\" with the attribute \"name\" set to the value \"" + defName + "\" must be existent exactly once, but is: " + columnDefitionsNodes.Count.ToString()))
+        columnDefitionsNodes.[0].SelectNodes(XPATH_COLUMN_DEFINITIONS_NAMES, xnsm)
+        |> MapXmlNodeList(fun(node: XmlNode) -> node.Value)
+        |> AddIndexes
+        |> List.map(fun((name: string), (index: int)) -> { ColumnDefinition.Name = name; ColumnDefinition.Index = index })
+    with
+    | _ as err -> raise(new ConfigurationException("The column-definitions could not be parsed", err))
+
 /// <summary>Returns a list of ColumnMapping instances contained in the owner node.</summary>
 let private getColumnMappings(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): ColumnMappings =
-    AddIndexes(GetAttributePairsFromNodes (ownerNode.SelectNodes(CONFIG_NAMESPACE_PREFIX + ":column", xnsm)) "ref" "as")
-    |> List.map(fun(((source: string), (target: string)), (index: int)) -> { ColumnMapping.Source = { ColumnDefinition.Name = source
-                                                                                                      ColumnDefinition.Index = index
-                                                                                                    }
-                                                                             ColumnMapping.Target = { ColumnDefinition.Name = target
-                                                                                                      ColumnDefinition.Index = index
-                                                                                                    }
-                                                                           })
+    try
+        let mappingsName: string = GetStringValueOfAttribute ownerNode "column-mappings"
+        let columnMappingsNodes: XmlNodeList = (getCsvJob ownerNode xnsm).SelectNodes("/" + CONFIG_NAMESPACE_PREFIX + ":csv-job/" + CONFIG_NAMESPACE_PREFIX + ":column-mappings[@name='" + mappingsName + "']", xnsm)
+        if columnMappingsNodes.Count <> 1 then
+            raise(new ConfigurationException("The element \"column-mappings\" with the attribute \"name\" set to the value \"" + mappingsName + "\" must be existent exactly once, but is: " + columnMappingsNodes.Count.ToString()))
+        columnMappingsNodes.[0].SelectNodes(XPATH_COLUMN_FROM_COLUMN_MAPPINGS, xnsm)
+        |> Core.Utilities.Xml.MapXmlNodeList(fun(node: XmlNode) ->
+            let sourceName: string = GetStringValueOfAttribute node "ref"
+            let targetName: option<string> = GetStringValueOfOptionalAttribute node "as"
+            (sourceName, (if targetName.IsNone then sourceName else targetName.Value)))
+        |> AddIndexes
+        |> List.map(fun(((sourceName: string), (targetName: string)), (index: int)) ->
+            { ColumnMapping.Source = { ColumnDefinition.Name = sourceName
+                                       ColumnDefinition.Index = index
+                                     }
+              ColumnMapping.Target = { ColumnDefinition.Name = targetName
+                                       ColumnDefinition.Index = index
+                                     }
+            })
+    with
+    | _ as err -> raise(new ConfigurationException("The column-mappings could not be parsed", err))
     
 /// <summary>Creates a WriteTaskConfiguration object from an xmlNode.</summary>
 let private parseWriteTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): WriteConfiguration =

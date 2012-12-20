@@ -1,33 +1,60 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <csv-job xmlns="http://ztt.fh-worms.de/georgieff/csv/">
+  <column-definitions name="col-defs">
+    <column name="unit id"/>
+    <column name="created at"/>
+    <column name="golden"/>
+    <column name="id"/>
+    <column name="missed"/>
+    <column name="started at"/>
+    <column name="tainted"/>
+    <column name="channel"/>
+    <column name="trust"/>
+    <column name="worker id"/>
+    <column name="country"/>
+    <column name="region"/>
+    <column name="city"/>
+    <column name="ip"/>
+    <column name="how difficult was the assertion to decide on"/>
+    <column name="your choice"/>
+    <column name="annotated sentence"/>
+    <column name="file"/>
+    <column name="line"/>
+    <column name="pattern"/>
+    <column name="unannotated sentence"/>
+    <column name="x"/>
+    <column name="your coice gold"/>
+    <column name="ys"/>
+  </column-definitions>
+
+  <column-mappings name="final-columns">
+    <column ref="unit id" as="unit id"/>
+    <column ref="created at" as="created at"/>
+    <column ref="golden id" as="golden id"/>
+    <column ref="missed" as="missed"/>
+    <column ref="started at" as="started at"/>
+    <column ref="tainted" as="tainted"/>
+    <column ref="channel" as="channel"/>
+    <column ref="trust" as="worker trust"/>
+    <column ref="worker id" as="worker id"/>
+    <column ref="country" as="country"/>
+    <column ref="region" as="region"/>
+    <column ref="city" as="city"/>
+    <column ref="ip" as="ip"/>
+    <column ref="how difficult was the assertion to decide on" as="difficulty"/>
+    <column ref="your choice" as="answer"/>
+    <column ref="annotated sentence" as="annotated sentence"/>
+    <column ref="file" as="file"/>
+    <column ref="line" as="line"/>
+    <column ref="pattern" as="pattern"/>
+    <column ref="unannotated sentence" as="unannotated sentence"/>
+    <column ref="x" as="hypernym"/>
+    <column ref="your coice gold" as="gold answer"/>
+    <column ref="ys" as="hyponyms"/>
+  </column-mappings>
+  
   <!-- a workflow may have an attribute previous-workflows with a coma separated list of workflow names -->
-  <workflow name="test-workflow">
-    <column-definitions>
-      <column name="unit id"/>
-      <column name="created at"/>
-      <column name="golden"/>
-      <column name="id"/>
-      <column name="missed"/>
-      <column name="started at"/>
-      <column name="tainted"/>
-      <column name="channel"/>
-      <column name="trust"/>
-      <column name="worker id"/>
-      <column name="country"/>
-      <column name="region"/>
-      <column name="city"/>
-      <column name="ip"/>
-      <column name="how difficult was the assertion to decide on"/>
-      <column name="your choice"/>
-      <column name="annotated sentence"/>
-      <column name="file"/>
-      <column name="line"/>
-      <column name="pattern"/>
-      <column name="unannotated sentence"/>
-      <column name="x"/>
-      <column name="your coice gold"/>
-      <column name="ys"/>
-    </column-definitions>
+  <workflow name="test-workflow" column-definitions="col-defs">
     <read-task name="csv-reader">
       <file path="..\..\Identify Hyponymous Collections.csv"/>
       <split char=","/>
@@ -36,32 +63,9 @@
       <trim-whitespace-start value="true"/>
       <trim-whitespace-end value="true"/>
     </read-task>
-    <write-task name="printer" previous-task="even-row-filter">
+    <write-task name="printer" previous-task="even-row-filter" column-mappings="final-columns">
       <!-- <file path="" mode="create"/> --> <!-- default is console --><!-- file-mode: create, create-new, append, open, open-or-create -->
       <file path="tmp.txt" mode="Create"/>
-      <column ref="unit id" as="unit id"/>
-      <column ref="created at" as="created at"/>
-      <column ref="golden id" as="golden id"/>
-      <column ref="missed" as="missed"/>
-      <column ref="started at" as="started at"/>
-      <column ref="tainted" as="tainted"/>
-      <column ref="channel" as="channel"/>
-      <column ref="trust" as="worker trust"/>
-      <column ref="worker id" as="worker id"/>
-      <column ref="country" as="country"/>
-      <column ref="region" as="region"/>
-      <column ref="city" as="city"/>
-      <column ref="ip" as="ip"/>
-      <column ref="how difficult was the assertion to decide on" as="difficulty"/>
-      <column ref="your choice" as="answer"/>
-      <column ref="annotated sentence" as="annotated sentence"/>
-      <column ref="file" as="file"/>
-      <column ref="line" as="line"/>
-      <column ref="pattern" as="pattern"/>
-      <column ref="unannotated sentence" as="unannotated sentence"/>
-      <column ref="x" as="hypernym"/>
-      <column ref="your coice gold" as="gold answer"/>
-      <column ref="ys" as="hyponyms"/>
       <split char="	"/>
       <quote char='"'/>
       <meta-quote char='\'/>
