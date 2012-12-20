@@ -45,7 +45,7 @@ type public Workflow(configuration: WorkflowConfiguration) =
     new(configFile: string, workflowName: string) = Workflow(WorkflowConfiguration.Parse(configFile, workflowName))
 
     /// <summary>Can be called explecitly to run all tasks of this workflow.</summary>
-    member private this.ProcessTasks(): Unit =
+    member public this.ProcessTasks(): Unit =
         let lastTask: option<ITask> = 
             List.fold(fun(prev: option<ITask>) (current: ITask) ->
                 if prev.IsSome then
