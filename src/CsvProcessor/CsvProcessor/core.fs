@@ -50,12 +50,6 @@ module public Exceptions =
         new (message: string) = WorkflowException(message, null)
         new () = WorkflowException(null, null)
 
-    /// <summary>Should be thrown if any operation of during the merging of lines fails.</summary>
-    type public LineOperationException(message: string, innerException: Exception) =
-        inherit Exception(message, innerException)
-        new (message: string) = LineOperationException(message, null)
-        new () = LineOperationException(null, null)
-
 module public Utilities =
     module public DotNet =
         open System.Reflection
@@ -510,9 +504,9 @@ module public Model =
             try
                 List.map(fun(colDef: string) -> List.find(fun(cell: ICell) -> cell.Name = colDef) line) columnDefinitions
             with
-                | :? System.Collections.Generic.KeyNotFoundException as err -> raise(new Exceptions.LineOperationException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!", err))
+                | :? System.Collections.Generic.KeyNotFoundException as err -> raise(new Exceptions.GenericOperationException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!", err))
         else
-            raise(new Exceptions.LineOperationException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!"))
+            raise(new Exceptions.GenericOperationException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!"))
 
     /// <summary>A helper function for the funtion mergeListOfLines that merges
     /// two instances of Lines to a single instance of the type Lines if the column
@@ -534,7 +528,7 @@ module public Model =
                     |> List.filter(fun(line: Line) -> not(IsHeaderLine line true))
                 existingLines @ sortedLines
             else
-                raise(new Exceptions.LineOperationException("The lines " + newLines.ToString() + " cannot be merged with the lines " + existingLines.ToString() + " because the column defintions do not match:\n" + Utilities.List.ListToString colNames_1 + "\n" + Utilities.List.ListToString colNames_2))
+                raise(new Exceptions.GenericOperationException("The lines " + newLines.ToString() + " cannot be merged with the lines " + existingLines.ToString() + " because the column defintions do not match:\n" + Utilities.List.ListToString colNames_1 + "\n" + Utilities.List.ListToString colNames_2))
             
 
     /// <summary>A helper function for MergeLines that recursivel merges the passed list

@@ -66,6 +66,7 @@
     <Compile Include="Writer.fs" />
     <Compile Include="GenericTask.fs" />
     <Compile Include="Workflow.fs" />
+    <Compile Include="Job.fs" />
     <EmbeddedResource Include="csv.config.xsd" />
   </ItemGroup>
   <ItemGroup>

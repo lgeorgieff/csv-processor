@@ -25,10 +25,18 @@ type public GenericTask(configuration: GenericTaskConfiguration) =
     
     // all methods that are needed for registering, derigestering and
     // requesting an operation
-    ///<summary>Returns true if the passed identifier is registered as a LineOpertion
-    /// or as a DocumentOpertion. Otherwise the return value is false.</summary>
-    static member public IsRegistered(identifier: string): bool =
-        GenericTaskOperations.RegisteredLineOperations.ContainsKey(identifier) || GenericTaskOperations.RegisteredDocumentOperations.ContainsKey(identifier)
+    ///<summary>Returns true if the passed identifier is registered as a LineOpertion.
+    /// Otherwise the return value is false.</summary>
+    static member public IsRegisteredLineOperation(identifier: string): bool =
+        GenericTaskOperations.RegisteredLineOperations.ContainsKey(identifier)
+    ///<summary>Returns true if the passed identifier is registered as a documentOpertion.
+    /// Otherwise the return value is false.</summary>
+    static member public IsRegisteredDocumentOperation(identifier: string): bool =
+        GenericTaskOperations.RegisteredDocumentOperations.ContainsKey(identifier)
+    ///<summary>Returns true if the passed identifier is registered as a documentOpertion
+    /// or lineOperation. Otherwise the return value is false.</summary>
+    static member public IsRegisteredOperation(identifier: string): bool =
+        GenericTask.IsRegisteredDocumentOperation identifier || GenericTask.IsRegisteredLineOperation identifier
     /// <summary>Returns true if the passed operation is registered as a
     /// line operation. Otherwise the return value is false.</summary>
     static member public IsRegistered(lineOperation: Line -> option<Line>): bool =
@@ -39,14 +47,14 @@ type public GenericTask(configuration: GenericTaskConfiguration) =
         GenericTaskOperations.RegisteredDocumentOperations.ContainsValue(documentOperation)
     /// <summary>Registers the passed operation as a line operation.</summary>
     static member public RegisterOperation((identifier: string),(lineOperation: Line -> option<Line>)): Unit =
-        if GenericTask.IsRegistered identifier then
+        if GenericTask.IsRegisteredOperation identifier then
             raise(new GenericOperationException("An operation for the identifier " + identifier + " is already registered!"))
         if GenericTask.IsRegistered lineOperation then
             raise(new GenericOperationException("This operation is already registered!"))
         GenericTaskOperations.RegisteredLineOperations.Add(identifier, lineOperation)
     /// <summary>Registers the passed operation as a document operation.</summary>
     static member public RegisterOperation((identifier: string), (documentOperation: Lines -> Lines)): Unit =
-        if GenericTask.IsRegistered identifier then
+        if GenericTask.IsRegisteredOperation identifier then
             raise(new GenericOperationException("An operation for the identifier " + identifier + " is already registered!"))
         if GenericTask.IsRegistered documentOperation then
             raise(new GenericOperationException("This operation is already registered!"))
@@ -65,6 +73,8 @@ type public GenericTask(configuration: GenericTaskConfiguration) =
     /// <summary>A helper method for applying the registered operation
     /// of this task line by line.</summary>
     member private this.OperateLineByLine(identifier: string) (lines: Lines): Lines = 
+        if not(GenericTask.IsRegisteredLineOperation identifier) then
+            raise(new CSV.Core.Exceptions.GenericOperationException("The operation \"" + identifier + "\" is not registered as a line operation"))
         let operation: Line -> option<Line> = GenericTask.GetLineOperation identifier
         let rec operateOnLines(iLines: Lines) (accumulator: Lines): Lines =
             match iLines with
@@ -77,7 +87,9 @@ type public GenericTask(configuration: GenericTaskConfiguration) =
         operateOnLines lines []
     /// <summary>A helper method for applying the registered operation
     /// of this task on hte entire document at once.</summary>
-    member private this.OperationEntireDocument(identifier: string) (lines: Lines): Lines =
+    member private this.OperateEntireDocument(identifier: string) (lines: Lines): Lines =
+        if not(GenericTask.IsRegisteredDocumentOperation identifier) then
+            raise(new CSV.Core.Exceptions.GenericOperationException("The operation \"" + identifier + "\" is not registered as a document operation"))
         (GenericTask.GetDocumentOperation identifier) lines
 
     interface IConsumerTask with
@@ -88,7 +100,7 @@ type public GenericTask(configuration: GenericTaskConfiguration) =
                                                    output <- Some(if this.IsLineOperation then
                                                                     this.OperateLineByLine configuration.LineOperation.Value (input.Value)
                                                                   else
-                                                                    this.OperationEntireDocument configuration.DocumentOperation.Value (input.Value))
+                                                                    this.OperateEntireDocument configuration.DocumentOperation.Value (input.Value))
     interface IGeneratorTask with
         member this.Output: Lines = if output.IsNone then
                                         raise(new PropertyNotSetException("The property Output was not set yet. Set the Input property before requesting the Output!"))
