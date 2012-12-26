@@ -17,16 +17,8 @@ let public main(args: array<string>): int =
     if args.Length <> 1 then
         raise(new ArgumentException("expected one argument defining the configuration file"))
 
-    GenericTask.RegisterOperation("country = usa", (fun(line: Line) ->
-        if (List.tryFind(fun(cell: ICell) -> cell.Name = "country" && cell.Value.ToLower() = "usa") line).IsSome then
-            Some line
-        else
-            None))
-    GenericTask.RegisterOperation("line position % 2 = 0", (fun(lines: Lines) ->
-        FilterEachSecond (List.filter(fun(line: Line) -> not(IsHeaderLine line true)) lines) true))
-
     let workflows: list<Workflow> = GetWorkflows args.[0]
-    (List.head workflows).ProcessTasks()
+    //(List.head workflows).ProcessTasks()
 
     Console.WriteLine("press ENTER to quit")
     Console.ReadLine() |> ignore

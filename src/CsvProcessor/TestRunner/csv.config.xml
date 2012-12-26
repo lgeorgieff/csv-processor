@@ -53,8 +53,7 @@
     <column ref="ys" as="hyponyms"/>
   </column-mappings>
   
-  <!-- a workflow may have an attribute previous-workflows with a coma separated list of workflow names -->
-  <workflow name="test-workflow" column-definitions="col-defs">
+  <workflow name="test-workflow-1" column-definitions="col-defs">
     <read-task name="csv-reader">
       <file path="..\..\Identify Hyponymous Collections.csv"/>
       <split char=","/>
@@ -63,18 +62,26 @@
       <trim-whitespace-start value="true"/>
       <trim-whitespace-end value="true"/>
     </read-task>
-    <write-task name="printer" previous-task="even-row-filter" column-mappings="final-columns">
-      <!-- <file path="" mode="create"/> --> <!-- default is console --><!-- file-mode: create, create-new, append, open, open-or-create -->
+  </workflow>
+
+  <workflow name="test-workflow-2" column-definitions="col-defs" previous-workflows="test-workflow-1">
+    <generic-task name="make-upper-case">
+      <line-operation identifier="upper-case-transform"/>
+    </generic-task>
+  </workflow>
+
+  <workflow name="test-workflow-3" column-definitions="col-defs" previous-workflows="test-workflow-1">
+    <generic-task name="mask-space">
+      <document-operation identifier="space-transform"/>
+    </generic-task>
+  </workflow>
+
+  <workflow name="test-workflow-4" column-definitions="col-defs" previous-workflows="test-workflow-2 test-workflow-3">
+    <write-task name="printer" column-mappings="final-columns">
       <file path="tmp.txt" mode="Append"/>
       <split char="	"/>
       <quote char='"'/>
       <meta-quote char='\'/>
     </write-task>
-    <generic-task name="usa-filter" previous-task="csv-reader">
-      <line-operation identifier="country = usa"/> <!-- either line-operation or document operation muest be set -->
-    </generic-task>
-    <generic-task name="even-row-filter" previous-task="usa-filter">
-      <document-operation identifier="line position % 2 = 0"/>
-    </generic-task>
   </workflow>
 </csv-job>

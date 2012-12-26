@@ -115,7 +115,7 @@ type public Writer(configuration: WriteConfiguration) =
         override this.TaskName: string = configuration.TaskName
         override this.TaskConfiguration: ITaskConfiguration = configuration :> ITaskConfiguration
     interface IConsumerTask with
-        override this.PreviousTask: string = configuration.PreviousTask
+        override this.PreviousTask: option<string> = configuration.PreviousTask
         override this.Input with set(value: Lines) = if input.IsSome then
                                                         raise(new PropertyAlreadySetException("The property Input can be set only ones"))
                                                      input <- Some value

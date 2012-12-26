@@ -81,7 +81,7 @@ type public GenericTask(configuration: GenericTaskConfiguration) =
         (GenericTask.GetDocumentOperation identifier) lines
 
     interface IConsumerTask with
-        member this.PreviousTask: string = configuration.PreviousTask
+        member this.PreviousTask: option<string> = configuration.PreviousTask
         member this.Input with set(value: Lines) = if input.IsSome then
                                                     raise(new PropertyAlreadySetException("The property Input can be set only ones"))
                                                    input <- Some value

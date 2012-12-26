@@ -449,7 +449,7 @@ module public Model =
     /// on prior tasks.</summary>
     type public IConsumerTaskConfiguration =
         inherit ITaskConfiguration
-        abstract member PreviousTask: string with get
+        abstract member PreviousTask: option<string> with get
 
     /// <summary>Represents a column definition made of a column name and
     /// its position/index in a line.</summary>
@@ -565,7 +565,7 @@ module public Model =
         inherit ITask
         /// <summary>The name of the previous task which results are used as input
         /// data for this task. The task name is used as a reference.</summary>
-        abstract member PreviousTask: string with get
+        abstract member PreviousTask: option<string> with get
         /// <summary>Realizes a setter that takes the input data of a Task to be processed.
         /// The processing of the input data is directly started when the 
         /// property is set.</summary>

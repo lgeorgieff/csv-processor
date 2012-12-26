@@ -50,11 +50,11 @@ type public WriteConfiguration = { ColumnMappings: ColumnMappings
                                    TrimWhitespaceStart: bool
                                    TrimWhitespaceEnd: bool
                                    TaskName: string
-                                   PreviousTask: string
+                                   PreviousTask: option<string>
                                  } interface ITaskConfiguration with
                                     member this.TaskName: string = this.TaskName
                                    interface IConsumerTaskConfiguration with
-                                    member this.PreviousTask: string = this.PreviousTask
+                                    member this.PreviousTask: option<string> = this.PreviousTask
 
 /// <summary>A configuration class representing configuration settings for
 /// generic tasks.
@@ -67,12 +67,12 @@ type public WriteConfiguration = { ColumnMappings: ColumnMappings
 /// TaskName: the identifier of the actual task.</summary>
 type public GenericTaskConfiguration = { LineOperation: option<string>
                                          DocumentOperation: option<string>
-                                         PreviousTask: string
+                                         PreviousTask: option<string>
                                          TaskName: string
                                        } interface ITaskConfiguration with
                                             member this.TaskName: string = this.TaskName
                                          interface IConsumerTaskConfiguration with
-                                            member this.PreviousTask: string = this.PreviousTask
+                                            member this.PreviousTask: option<string> = this.PreviousTask
                                          interface IGeneratorTaskConfiguration
 
 /// <summary>Returns the root csv-job element or throwns an ConfigurationException
@@ -257,7 +257,7 @@ let private parseWriteTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): WriteC
           WriteConfiguration.TrimWhitespaceStart = getTrimWhitespaceStart xmlNode xnsm
           WriteConfiguration.TrimWhitespaceEnd = getTrimWhitespaceEnd xmlNode xnsm
           WriteConfiguration.TaskName = getName xmlNode xnsm
-          WriteConfiguration.PreviousTask = GetStringValueOfAttribute xmlNode "previous-task"
+          WriteConfiguration.PreviousTask = GetStringValueOfOptionalAttribute xmlNode "previous-task"
         }
     with
     | _ as err -> raise(new ConfigurationException("a write task could not be parsed", err))
@@ -273,7 +273,7 @@ let private parseGenericTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): Gene
             raise(new ConfigurationException("one of <line-operation> and <document-operation> must be set"))
         { GenericTaskConfiguration.LineOperation = lineOperation
           GenericTaskConfiguration.DocumentOperation = documentOperation
-          GenericTaskConfiguration.PreviousTask = GetStringValueOfAttribute xmlNode "previous-task"
+          GenericTaskConfiguration.PreviousTask = GetStringValueOfOptionalAttribute xmlNode "previous-task"
           GenericTaskConfiguration.TaskName = getName xmlNode xnsm
         }
     with

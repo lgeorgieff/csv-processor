@@ -6,12 +6,12 @@ open CSV.Core.Utilities.List
 open CSV.Core.Exceptions
 open CSV.Tasks
 
-/// <summary>Throws an ConfigurationExcdetion when a Task is confifgured to be a
+/// <summary>Throws an ConfigurationException when a Task is confifgured to be a
 /// predeccors of multiple tasks.</summary>
 let private checkForMultipleTaskReferences(taskConfigurations: list<ITaskConfiguration>): Unit =
     List.iter(fun(conf: ITaskConfiguration) ->
         if List.length(List.filter(fun(item: ITaskConfiguration) ->
-            item :? IConsumerTaskConfiguration && (item :?> IConsumerTaskConfiguration).PreviousTask = conf.TaskName) taskConfigurations) > 1 then
+            item :? IConsumerTaskConfiguration && (item :?> IConsumerTaskConfiguration).PreviousTask.IsSome && (item :?> IConsumerTaskConfiguration).PreviousTask.Value = conf.TaskName) taskConfigurations) > 1 then
                 raise(new ConfigurationException("the task " + conf.TaskName + " has multiple successors"))) taskConfigurations
 
 /// <summary>A helper function that enables creating ordered lists of task configurations
@@ -29,7 +29,7 @@ let private createTaskChain(taskConfigurations: list<ITaskConfiguration>): list<
             let lastName: string = (Last taskChain).Value.TaskName
             let nextTasks: list<ITaskConfiguration> =
                 List.filter(fun(conf: ITaskConfiguration) ->
-                    conf :? IConsumerTaskConfiguration && (conf :?> IConsumerTaskConfiguration).PreviousTask = lastName) remainingTasks
+                    conf :? IConsumerTaskConfiguration && (conf :?> IConsumerTaskConfiguration).PreviousTask.IsSome && (conf :?> IConsumerTaskConfiguration).PreviousTask.Value = lastName) remainingTasks
             if List.length nextTasks <> 1 then
                 raise(new ConfigurationException("The task \"" + lastName + "\" requires exactly one successor task, but found: " + (List.length nextTasks).ToString()))
             distributeRemainingTasks (Remove (List.head nextTasks) remainingTasks) (taskChain @ nextTasks)
