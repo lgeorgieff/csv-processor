@@ -10,6 +10,7 @@ open CSV.Core.Model
 open CSV.Core.Utilities
 open CSV.Workflow
 open CSV.Core.Utilities.List
+open CSV.Core.Utilities.String
 
 
 [<EntryPointAttribute>]
@@ -18,7 +19,7 @@ let public main(args: array<string>): int =
         raise(new ArgumentException("expected one argument defining the configuration file"))
 
     let workflows: list<Workflow> = GetWorkflows args.[0]
-    //(List.head workflows).ProcessTasks()
+    (List.head workflows).ProcessTasks()
 
     Console.WriteLine("press ENTER to quit")
     Console.ReadLine() |> ignore

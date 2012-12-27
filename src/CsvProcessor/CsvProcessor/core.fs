@@ -354,6 +354,41 @@ module public Utilities =
                 |> List.Tuplize
                 |> List.map(fun((left: int), (right: int)) -> str.Substring(left, right - left))
 
+        /// <summary>Removes all quotation characters of the passed string that are not meta-quoted .</summary>
+        let private removeQuotes(quote: char) (metaQuote: char) (str: string): string =
+            let rec innerFun(lastMetaQuotes: list<char>)(remainingString: string) (accumulator: string): string =
+                if remainingString = "" then
+                    accumulator + new String((Array.ofList lastMetaQuotes))
+                elif remainingString.StartsWith(metaQuote.ToString()) then
+                    innerFun (lastMetaQuotes @ [metaQuote]) (remainingString.Substring(1)) accumulator
+                elif remainingString.StartsWith(quote.ToString()) then
+                    if lastMetaQuotes.Length % 2 = 0 then
+                        innerFun [] (remainingString.Substring(1)) (accumulator + new String(Array.ofList lastMetaQuotes))
+                    else
+                        innerFun [] (remainingString.Substring(1)) (accumulator + new String(Array.ofList (List.tail lastMetaQuotes)) + remainingString.[0].ToString())
+                else
+                    innerFun [] (remainingString.Substring(1)) (accumulator + new String(Array.ofList lastMetaQuotes) + remainingString.[0].ToString())
+            innerFun [] str ""
+
+        /// <summary>Removes all meta quotation characters from the passed string.</summary>
+        let private removeMetaQuotes(quote: char) (metaQuote: char) (str: string): string =
+            let rec innerFun(lastMetaQuotes: list<char>) (remainingString: string) (accumulator: string): string =
+                if remainingString = "" then
+                    if lastMetaQuotes.Length % 2 = 0 then
+                        accumulator + new String(Array.create(lastMetaQuotes.Length / 2) metaQuote)
+                    else
+                        raise(new Exceptions.ParseException("Invalid meta quotation found in \"" + str + "\""))
+                elif remainingString.StartsWith(metaQuote.ToString()) then
+                    innerFun (lastMetaQuotes @ [metaQuote]) (remainingString.Substring(1)) accumulator
+                else
+                    if lastMetaQuotes.Length % 2 = 0 then
+                        innerFun [] (remainingString.Substring(1)) (accumulator + new String(Array.create(lastMetaQuotes.Length / 2) metaQuote) + remainingString.[0].ToString())
+                    elif remainingString.StartsWith(quote.ToString()) then
+                        innerFun [] (remainingString.Substring(1)) (accumulator + new String(Array.create((lastMetaQuotes.Length - 1) / 2) metaQuote) + remainingString.[0].ToString())
+                    else
+                        raise(new Exceptions.ParseException("Invalid meta quotation found in \"" + str + "\""))
+            innerFun [] str ""
+
         /// <summary>Treat this string as a CSV line and splits the line by using the splitter
         /// splitter occurrences in quotes are ignored.</summary>
         let private splitLine(line: string) (split: char) (quote: char) (metaQuote: char): list<string> =
@@ -365,6 +400,8 @@ module public Utilities =
                                                     str.Substring(1)
                                                 else
                                                     str)
+                |> List.map(fun(str: string) -> removeQuotes quote metaQuote str)
+                |> List.map(fun(str: string) -> removeMetaQuotes quote metaQuote str)
 
         type public System.String with
             /// <summary>Treat this string as a CSV line and splits the line by using the splitter
