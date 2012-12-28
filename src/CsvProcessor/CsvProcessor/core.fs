@@ -129,7 +129,7 @@ module public Utilities =
                     innerFun (List.tail inList) (outList @ [List.head inList])
             innerFun lst []
 
-        /// <summary>Returns a list of tuples of the inout list, e.g.
+        /// <summary>Returns a list of tuples of the input list, e.g.
         /// [1; 2; 3; 4; 5] => [(1,2); (2,3); (3,4); (4,5)].
         /// If a list of only one element is passed the result is:
         /// [1] => [(1,1)].</summary>
@@ -261,20 +261,6 @@ module public Utilities =
             doc.Schemas.Add(schema) |> ignore
             (doc, xnsm)
 
-    module public IO =
-        /// <summary>Reads the entire stream line by line and invokes lineProcessor on each line.
-        /// Finally, the entire list of results of lineProcessor is returned.</summary>
-        let rec private readStream(streamReader: StreamReader) (lineProcessor: string -> bool -> 't) (accumulator: list<'t>): list<'t> =
-            if not (streamReader.EndOfStream) then
-                readStream streamReader lineProcessor (accumulator @ [lineProcessor(streamReader.ReadLine()) (List.length accumulator = 0)])
-            else
-                accumulator
-
-        /// <summary>Reads the entire stream line by line and invokes lineProcessor on each line.
-        /// Finally, the entire list of results of lineProcessor is returned.</summary>
-        let public ReadStream(streamReader: StreamReader) (lineProcessor: string -> bool-> 't): list<'t> =
-            readStream streamReader lineProcessor []
-
     module public String =
         /// <summary>Returns a list of indexes where occurrences of the character
         /// what can be found.</summary>
@@ -318,16 +304,40 @@ module public Utilities =
                     index >= left && index <= right) quoteRanges) indexesOfWhat
 
         /// <summary>Returns the indexes of all occurrences of what
-        /// that are not placced within quotes.</summary>
-        let private indexesOfUnquoted(str: string) (what: char) (quote: char) (metaQuote: char): list<int> =
+        /// that are not placced within quotes.
+        /// Note if a quotation is not closed a ParseExcetpion is thrown.</summary>
+        let private indexesOfUnquotedStrict(str: string) (what: char) (quote: char) (metaQuote: char): list<int> =
             let indexesOfWhat: list<int> = indexesOf str what [] 0
             let quoteRanges: list<int * int> =
-                let indexesOfQuotes = indexesOf str quote [] 0
-                                      |> List.filter(fun(idx: int) -> not(isMetaQuoted str idx metaQuote))
+                let indexesOfQuotes: list<int> =
+                    indexesOf str quote [] 0
+                    |> List.filter(fun(idx: int) -> not(isMetaQuoted str idx metaQuote))
                 try
                     List.zip(List.FilterEachSecond indexesOfQuotes true)(List.FilterEachSecond indexesOfQuotes false)
                 with
                     | _ as err -> raise(new Exceptions.ParseException("An odd amount of quotations found, so a closing quotation is missing", err))
+            if quoteRanges = [] then
+                indexesOfWhat
+            else
+                List.filter(fun(index: int) ->
+                    not(List.exists(fun((left: int), (right: int)) ->
+                            index >= left && index <= right) quoteRanges)) indexesOfWhat
+
+        /// <summary>Returns the indexes of all occurrences of what
+        /// that are not placced within quotes.
+        /// Note if a quotation is not closed the part starting with the unclosed
+        /// quotation is ignored</summary>
+        let private indexesOfUnquoted(str: string) (what: char) (quote: char) (metaQuote: char): list<int> =
+            let indexesOfWhat: list<int> = indexesOf str what [] 0
+            let quoteRanges: list<int * int> =
+                let indexesOfQuotes: list<int> =
+                    let tmp: list<int> = indexesOf str quote [] 0
+                                         |> List.filter(fun(idx: int) -> not(isMetaQuoted str idx metaQuote))
+                    if tmp.Length % 2 = 0 then
+                        tmp
+                    else
+                        List.rev tmp |> List.tail |> List.rev
+                List.zip(List.FilterEachSecond indexesOfQuotes true)(List.FilterEachSecond indexesOfQuotes false)
             if quoteRanges = [] then
                 indexesOfWhat
             else
@@ -395,7 +405,7 @@ module public Utilities =
             if line = null || line.Length = 0 then
                 []
             else
-                splitAtIndexes line (indexesOfUnquoted line split quote metaQuote)
+                splitAtIndexes line (indexesOfUnquotedStrict line split quote metaQuote)
                 |> List.map(fun(str: string) -> if str.StartsWith(split.ToString()) then
                                                     str.Substring(1)
                                                 else
@@ -404,7 +414,7 @@ module public Utilities =
                 |> List.map(fun(str: string) -> removeMetaQuotes quote metaQuote str)
 
         type public System.String with
-            /// <summary>Treat this string as a CSV line and splits the line by using the splitter
+            /// <summary>Treats this string as a CSV line and splits the line by using the splitter
             /// splitter occurrences in quotes are ignored.</summary>
             member public this.SplitLine((split: char), (quote: char), (metaQuote: char)): list<string> =
                 splitLine this split quote metaQuote
@@ -416,9 +426,21 @@ module public Utilities =
             member public this.IndexesOf(what: char): list<int> =
                 indexesOf this what [] 0
             /// <summary>Returns a list of indexes where occurrences of the character
-            /// what can be found that is not in a quoted area.</summary>
+            /// what can be found that is not in a quoted area.
+            /// Note if a quotation is not closed, a ParseException is thrown.</summary>
+            member public this.IndexesOfUnquotedStrict((what: char), (quote: char), (metaQuote: char)): list<int> =
+                indexesOfUnquotedStrict this what quote metaQuote
+            /// <summary>Returns a list of all occurrences of what that are
+            /// note quoted by the character quote.</summary>
+            member public this.IndexesOfUnquoted((what: char), (quote: char)): list<int> =
+                this.IndexesOf(what)
+                |> List.filter(fun(idx: int) -> not(isMetaQuoted this idx quote))
+            /// <summary>Returns the indexes of all occurrences of what
+            /// that are not placced within quotes.
+            /// Note if a quotation is not closed the part starting with the unclosed
+            /// quotation is ignored</summary>  
             member public this.IndexesOfUnquoted((what: char), (quote: char), (metaQuote: char)): list<int> =
-                indexesOfUnquoted this what quote metaQuote
+                indexesOfUnquoted this what quote metaQuote 
             /// <summary>Retruns true if the character at the given position is quoted, e.g. backslash.</summary>
             member public this.IsQuoted((index: int), (quote: char)): bool =
                 isMetaQuoted this index quote
