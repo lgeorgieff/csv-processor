@@ -23,6 +23,7 @@ type public ReadConfiguration = { FilePath: string
                                   TrimWhitepsaceStart: bool
                                   TrimWhitespaceEnd: bool
                                   TaskName: string
+                                  ReadMultiLine: bool
                                 } interface ITaskConfiguration with
                                     member this.TaskName: string = this.TaskName
                                   interface IGeneratorTaskConfiguration
@@ -180,6 +181,18 @@ let private getName(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): string =
         raise(new ConfigurationException("Task and workflow names must not be empty strings, but found in " + xmlNode.ToString()))
     else
         value.Trim()
+
+/// <summary>Returns the value of the attribute "value" of a read-multi-line element
+/// of the passed xml node. If this value is not present, false is returned.</summary>
+let private getReadMultiLine(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): bool =
+    let value: XmlNode = xmlNode.SelectSingleNode(XPATH_READ_MULTI_LINE, xnsm)
+    if value = null then
+        false
+    else
+        try
+            Boolean.Parse(value.Value)
+        with
+        | _ as err -> raise(new ConfigurationException("The read-multi-line value \"" + value.Value + "\" could not be parsed to a boolean", err))
    
 /// <summary>Creates a ReadTaskConfiguration object from an xmlNode.</summary>
 let private parseReadTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): ReadConfiguration =
@@ -191,6 +204,7 @@ let private parseReadTask(xmlNode: XmlNode) (xnsm: XmlNamespaceManager): ReadCon
           ReadConfiguration.TrimWhitepsaceStart = getTrimWhitespaceStart xmlNode xnsm
           ReadConfiguration.TrimWhitespaceEnd = getTrimWhitespaceEnd xmlNode xnsm
           ReadConfiguration.TaskName = getName xmlNode xnsm
+          ReadConfiguration.ReadMultiLine = getReadMultiLine xmlNode xnsm
         }
     with
     | _ as err -> raise(new ConfigurationException("a read task could not be parsed", err))

@@ -61,6 +61,7 @@
       <meta-quote char='\'/>
       <trim-whitespace-start value="true"/>
       <trim-whitespace-end value="true"/>
+      <read-multi-line value="true"/>
     </read-task>
   </workflow>
 

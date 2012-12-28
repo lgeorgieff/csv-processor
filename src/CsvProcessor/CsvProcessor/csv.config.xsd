@@ -93,10 +93,11 @@
       which defines the character used to quote a column, the "meta-quote"
       character which is used to quote the quote character, the "trim-whitespace-start"
       and trim "whitespace-end" elements that are used to defines whether to trim a column's
-      value on the left or/and the right side. Additionally, the reader task requires
-      a name attribute to be identified and a column-mappings attirbute as a reference to
-      a column-definition-mappings element that defines the order and names of the
-      generated columns.</xs:documentation>
+      value on the left or/and the right side, the optional "read-multi-line" element that
+      allows to parse a logical csv-line from multiple lines from the read file.
+      Additionally, the reader task requires a name attribute to be identified and a
+      column-mappings attirbute as a reference to a column-definition-mappings element
+      that defines the order and names of the generated columns.</xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:element name="file">
@@ -127,6 +128,11 @@
       <xs:element name="trim-whitespace-end">
         <xs:complexType>
           <xs:attribute name="value" type="xs:boolean" use="required" />
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="read-multi-line" minOccurs="0">
+        <xs:complexType>
+          <xs:attribute name="value" type="xs:boolean" use="required"/>
         </xs:complexType>
       </xs:element>
     </xs:sequence>

@@ -42,6 +42,10 @@ let public XPATH_TASKS: string = XPATH_GENERIC_TASKS + " | " + XPATH_READ_TASKS 
 /// column-definitions children of a csv-job element.</summary>
 let public XPATH_COLUMN_DEFINITIONS_NAMES: string = CONFIG_NAMESPACE_PREFIX + ":column/@name"
 
+/// <summary>The XPATH expression for getting the value attribute of a read-multi-line
+/// element of a read task.</summary>
+let public XPATH_READ_MULTI_LINE: string = CONFIG_NAMESPACE_PREFIX + ":read-multi-line/@value"
+
 /// <summary>The file name of the xml schmea definition for the configuraiton file.</summary>
 [<LiteralAttribute>]
 let public CONFIGURATION_SCHEMA_FILE_NAME: string = "csv.config.xsd"
