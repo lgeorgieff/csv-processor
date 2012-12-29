@@ -21,7 +21,7 @@
         enumeration type in .Net.
         docu source: http://msdn.microsoft.com/en-us/library/system.io.filemode(v=vs.80).aspx
         *Append: Opens the file if it exists and seeks to the end of the file, or creates a new file.
-        *Creaste: Specifies that the operating system should create a new file. If the file already exists, it will be overwritten.
+        *Create: Specifies that the operating system should create a new file. If the file already exists, it will be overwritten.
         *CreateNew: Specifies that the operating system should create a new file. If the file already exists, an IOException is thrown.
         *Open: Specifies that the operating system should open an existing file. A System.IO.FileNotFoundException is thrown if the file does not exist.
         *OpenOrCreate: Specifies that the operating system should open a file if it exists; otherwise, a new file should be created.
@@ -29,12 +29,36 @@
       </xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="Create"/>
-      <xs:enumeration value="CreateNew"/>
-      <xs:enumeration value="Append"/>
-      <xs:enumeration value="Open"/>
-      <xs:enumeration value="OpenOrCreate"/>
-      <xs:enumeration value="Truncate"/>
+      <xs:enumeration value="Create">
+        <xs:annotation>
+          <xs:documentation>Specifies that the operating system should create a new file. If the file already exists, it will be overwritten.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="CreateNew">
+        <xs:annotation>
+          <xs:documentation>Specifies that the operating system should create a new file. If the file already exists, an IOException is thrown.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Append">
+        <xs:annotation>
+          <xs:documentation>Opens the file if it exists and seeks to the end of the file, or creates a new file.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Open">
+        <xs:annotation>
+          <xs:documentation>Specifies that the operating system should open an existing file. A System.IO.FileNotFoundException is thrown if the file does not exist.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="OpenOrCreate">
+        <xs:annotation>
+          <xs:documentation>Specifies that the operating system should open a file if it exists; otherwise, a new file should be created.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="Truncate">
+        <xs:annotation>
+          <xs:documentation>Specifies that the operating system should open an existing file. Once opened, the file should be truncated so that its size is zero bytes.</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
     </xs:restriction>
   </xs:simpleType>
 
@@ -54,12 +78,19 @@
     </xs:annotation>
     <xs:sequence>
       <xs:element maxOccurs="unbounded" name="column">
+        <xs:annotation>
+          <xs:documentation>Represents a single column where the attribute name defines the name of the final column cells that are used in the application. The order of column elements must coresponds to the order of the columns in the parsed file. Nevertheless, the header line of the parsed files is not checked for the same header names.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="name" type="xs:string" use="required" />
         </xs:complexType>
       </xs:element>
     </xs:sequence>
-    <xs:attribute name="name" type="xs:ID" use="required"/>
+    <xs:attribute name="name" type="xs:ID" use="required">
+      <xs:annotation>
+        <xs:documentation>The name/identifier if this column-definition (used to reference this task)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="column-definition-mappings-type">
@@ -76,13 +107,20 @@
     </xs:annotation>
     <xs:sequence>
       <xs:element maxOccurs="unbounded" name="column">
+        <xs:annotation>
+          <xs:documentation>Represents a column mapping that is used for writer tasks. So only the columns are printed for which a column mapping is defined. The final name of the column is the attribute value of as. If as is not set the original column name is used (ref).</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="ref" type="xs:string" use="required" />
           <xs:attribute name="as" type="xs:string" use="optional" />
         </xs:complexType>
       </xs:element>
     </xs:sequence>
-    <xs:attribute name="name" type="xs:ID" use="required"/>
+    <xs:attribute name="name" type="xs:ID" use="required">
+      <xs:annotation>
+        <xs:documentation>The name/identifier if this column-mapping (used to reference this task)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="read-task-type">
@@ -101,42 +139,67 @@
     </xs:annotation>
     <xs:all>
       <xs:element name="file">
+        <xs:annotation>
+          <xs:documentation>Defines the source file.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="path" type="xs:string" use="required" />
         </xs:complexType>
       </xs:element>
       <xs:element name="split">
+        <xs:annotation>
+          <xs:documentation>Defines the split character for columns.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="char" type="tns:character-type" use="required" />
         </xs:complexType>
       </xs:element>
       <xs:element name="quote">
+        <xs:annotation>
+          <xs:documentation>Defines the quote character for quoting the split character or new lines (only of read-multi-line is set ot true).</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="char" type="tns:character-type" use="required" />
         </xs:complexType>
       </xs:element>
       <xs:element name="meta-quote">
         <xs:complexType>
+          <xs:annotation>
+            <xs:documentation>Defines the meta quote character to quote the actual quote character.</xs:documentation>
+          </xs:annotation>
           <xs:attribute name="char" type="tns:character-type" use="required" />
         </xs:complexType>
       </xs:element>
       <xs:element name="trim-whitespace-start">
+        <xs:annotation>
+          <xs:documentation>If set to true, the left side of a column value is trimmed, i.e. all leading whitespace is removed.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="value" type="xs:boolean" use="required" />
         </xs:complexType>
       </xs:element>
       <xs:element name="trim-whitespace-end">
+        <xs:annotation>
+          <xs:documentation>If set to true, the right side of a column value is trimmed, i.e. all trailing whitespace is removed.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="value" type="xs:boolean" use="required" />
         </xs:complexType>
       </xs:element>
       <xs:element name="read-multi-line" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>If set to true, a logical csv-line can be parsed from multiple lines of a file.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="value" type="xs:boolean" use="required"/>
         </xs:complexType>
       </xs:element>
     </xs:all>
-    <xs:attribute name="name" type="xs:ID" use="required" />
+    <xs:attribute name="name" type="xs:ID" use="required">
+      <xs:annotation>
+        <xs:documentation>The name/identifier if this task (used to reference this task)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="write-task-type">
@@ -156,30 +219,54 @@
     </xs:annotation>
     <xs:all>      
       <xs:element name="file" maxOccurs="1" minOccurs="0">
+        <xs:annotation>
+          <xs:documentation>Defines the target file (if this element is non-existent, the standard output is the target) and how it is created/opened, the defaul is CreateNew.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="path" type="xs:string" use="required" />
           <xs:attribute name="mode" type ="tns:file-mode-type" use="optional"/>
         </xs:complexType>
       </xs:element>
       <xs:element name="split">
+        <xs:annotation>
+          <xs:documentation>Defines the split character for columns.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="char" type="tns:character-type" use="required" />
         </xs:complexType>
       </xs:element>
       <xs:element name="quote">
+        <xs:annotation>
+          <xs:documentation>Defines the quote character for quoting the split character or new lines (only of read-multi-line is set ot true).</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="char" type="tns:character-type" use="required" />
         </xs:complexType>
       </xs:element>
       <xs:element name="meta-quote">
+        <xs:annotation>
+          <xs:documentation>Defines the meta quote character to quote the actual quote character.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="char" type="tns:character-type" use="required" />
         </xs:complexType>
       </xs:element>
     </xs:all>
-    <xs:attribute name="name" type="xs:ID" use="required" />
-    <xs:attribute name="column-mappings" type="xs:IDREF" use="required"/>
-    <xs:attribute name="previous-task" type="xs:IDREF" use="optional" />
+    <xs:attribute name="name" type="xs:ID" use="required">
+      <xs:annotation>
+        <xs:documentation>The name/identifier if this task (used to reference this task)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="column-mappings" type="xs:IDREF" use="required">
+      <xs:annotation>
+        <xs:documentation>The used column mappings by this write task.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="previous-task" type="xs:IDREF" use="optional">
+      <xs:annotation>
+        <xs:documentation>The previous tasks on which this tasks depends.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="generic-task-type">
@@ -198,18 +285,32 @@
     </xs:annotation>
     <xs:choice>
       <xs:element name="document-operation">
+        <xs:annotation>
+          <xs:documentation>Uses an operation that must be registered as document operation, i.e. uses all lines from the document at once. The function signature is: Lines -> Lines.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="identifier" type="xs:string" use="required" />
         </xs:complexType>
       </xs:element>
       <xs:element name="line-operation">
+        <xs:annotation>
+          <xs:documentation>Uses an operation that must be registered as line operation, i.e. processes a single line at once from the document until all lines of the document are processed. The function signature is: Line -> option&lt;Lines&gt;.</xs:documentation>
+        </xs:annotation>
         <xs:complexType>
           <xs:attribute name="identifier" type="xs:string" use="required" />
         </xs:complexType>
       </xs:element>
     </xs:choice>
-    <xs:attribute name="name" type="xs:ID" use="required" />
-    <xs:attribute name="previous-task" type="xs:IDREF" use="optional" />
+    <xs:attribute name="name" type="xs:ID" use="required">
+      <xs:annotation>
+        <xs:documentation>The name/identifier if this task (used to reference this task)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="previous-task" type="xs:IDREF" use="optional">
+      <xs:annotation>
+        <xs:documentation>The previous tasks on which this tasks depends.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="workflow-type">
@@ -223,14 +324,29 @@
     </xs:annotation>
     <xs:sequence>
       <xs:choice minOccurs="1" maxOccurs="unbounded">
+        <xs:annotation>
+          <xs:documentation>A collection of tasks to be processed by this workflow. If this workflow depends on a previous workflow, the results of the previous workflows are set to this workflow and so the first task operates on these results (in this case, it must not be a reade task). The results of the last task of a workflow are set as results of a workflow.</xs:documentation>
+        </xs:annotation>
         <xs:element name="read-task" type="tns:read-task-type"/>
         <xs:element name="write-task" type="tns:write-task-type"/>
         <xs:element maxOccurs="unbounded" name="generic-task" type="tns:generic-task-type"/>
       </xs:choice>
     </xs:sequence>
-    <xs:attribute name="name" type="xs:ID" use="required" />
-    <xs:attribute name="column-definitions" type="xs:IDREF" use="required"/>
-    <xs:attribute name="previous-workflows" type="xs:IDREFS" use="optional"/>
+    <xs:attribute name="name" type="xs:ID" use="required">
+      <xs:annotation>
+        <xs:documentation>The name/identifier if this workflow (used to reference this task)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="column-definitions" type="xs:IDREF" use="required">
+      <xs:annotation>
+        <xs:documentation>The reference to the column defintions element that is used for all tasks of a workflow.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="previous-workflows" type="xs:IDREFS" use="optional">
+      <xs:annotation>
+        <xs:documentation>All names of workflows this workflow depends on, i.e. the results of the previous workflows are merged and set as the input of this workflow.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   
   <xs:element name="csv-job">
@@ -239,9 +355,20 @@
     </xs:annotation>
     <xs:complexType>
       <xs:sequence>
-        <xs:element name="column-definitions" type="tns:column-definitions-type" minOccurs="1" maxOccurs="unbounded"/>
-        <xs:element name="column-mappings" type="tns:column-definition-mappings-type" minOccurs="1" maxOccurs="unbounded"/>
+        <xs:element name="column-definitions" type="tns:column-definitions-type" minOccurs="1" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>The column defintions that are used by a read task for reading/parsing a file and that are used for passing results between several tasks and workflows.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="column-mappings" type="tns:column-definition-mappings-type" minOccurs="1" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation>The column mappings that are used by a write task for generating the content columns.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
         <xs:element name="workflow" minOccurs="1" maxOccurs="unbounded" type="tns:workflow-type">
+          <xs:annotation>
+            <xs:documentation>All workflows that belongs to this job.</xs:documentation>
+          </xs:annotation>
         </xs:element>
       </xs:sequence>
     </xs:complexType>
