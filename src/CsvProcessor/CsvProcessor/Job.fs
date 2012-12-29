@@ -57,8 +57,11 @@ type public Job(configurationFilePath: string) =
                                         List.exists(fun(wfName: string) -> wfName = resultName) wf.PreviousWorkflows) allResults
                                     |> List.map(fun(_, (result: option<Lines>)) -> result)
                                     |> List.filter Option.isSome
-                                    |> List.map Option.get
-                    wf.ProcessTasks()) currentWorkflows
+                                    |> List.map Option.get) currentWorkflows
+                List.map(fun(wf: Workflow) -> async { wf.ProcessTasks() }) currentWorkflows
+                |> Async.Parallel
+                |> Async.RunSynchronously
+                |> ignore
                 allResults @ (List.map(fun(wf: Workflow) -> (wf.WorkflowName, wf.Output)) currentWorkflows)) [] workflowChain
             |> Some
 
