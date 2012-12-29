@@ -1,6 +1,14 @@
 ﻿module public CSV.Constants
 
 open System
+open System.Reflection
+
+[<assembly: AssemblyVersion("1.0.0.0")>]
+[<assembly: AssemblyTitleAttribute("Comma Separated Value Processor Library")>]
+[<assembly: AssemblyProductAttribute("Comma Separated Value Processor Library")>]
+[<assembly: AssemblyCopyrightAttribute("GNU Lesser General Public License, http://www.gnu.org/licenses/lgpl.html")>]
+[<assembly: AssemblyCompanyAttribute("Lukas Georgieff, lukas.georgieff@hotmail.com")>]
+do()
 
 /// <summary>The xml namespace of the configuration file.</summary>
 [<LiteralAttribute>]
