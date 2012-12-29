@@ -85,6 +85,7 @@ type public GenericTask(configuration: GenericTaskConfiguration) =
                        else
                           operateOnLines (List.tail iLines) (accumulator @ [lineResult.Value])
         operateOnLines lines []
+
     /// <summary>A helper method for applying the registered operation
     /// of this task on hte entire document at once.</summary>
     member private this.OperateEntireDocument(identifier: string) (lines: Lines): Lines =

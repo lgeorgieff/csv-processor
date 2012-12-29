@@ -195,9 +195,10 @@ module public Utilities =
             (List.filter(fun(item1: 'a) -> not(List.exists(fun(item2: 'a) -> item1 = item2) list1)) list2) @
                 (List.filter(fun(item1: 'a) -> not(List.exists(fun(item2: 'a) -> item1 = item2) list2)) list1)
 
-        /// <summary>Returns a copy of the passed list without occurrences of the passed item.</summary>
-        let public Remove(item: 'a when 'a : equality) (lst: list<'a> when 'a : equality): list<'a> when 'a : equality =
-            List.filter(fun(elem: 'a) -> elem <> item) lst
+        /// <summary>Returns a copy of the passed list 'lst' without occurrences of the
+        /// givenlist 'itemsToRemove'.</summary>
+        let public Remove(itemsToRemove: list<'a> when 'a : equality) (lst: list<'a> when 'a : equality): list<'a> when 'a : equality =
+            List.filter(fun(elem: 'a) -> not(List.exists(fun(item: 'a) -> elem = item) itemsToRemove)) lst
 
     module public Xml =
         /// <summary>Returns a list of strings that represent the attribute values of the passed

@@ -52,6 +52,11 @@
     <column ref="your coice gold" as="gold answer"/>
     <column ref="ys" as="hyponyms"/>
   </column-mappings>
+
+  <column-mappings name="console-columns">
+    <column ref="x" as="hypernym"/>
+    <column ref="ys" as="hyponyms"/>
+  </column-mappings>
   
   <workflow name="test-workflow-1" column-definitions="col-defs">
     <read-task name="csv-reader">
@@ -81,6 +86,14 @@
     <write-task name="printer" column-mappings="final-columns">
       <file path="tmp.txt" mode="Append"/>
       <split char="	"/>
+      <quote char='"'/>
+      <meta-quote char='\'/>
+    </write-task>
+  </workflow>
+
+  <workflow name="test-workflow-5" column-definitions="col-defs" previous-workflows="test-workflow-2">
+    <write-task name="console-printer" column-mappings="console-columns">
+      <split char=" "/>
       <quote char='"'/>
       <meta-quote char='\'/>
     </write-task>

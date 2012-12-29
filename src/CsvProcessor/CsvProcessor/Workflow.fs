@@ -19,7 +19,7 @@ let private checkForMultipleTaskReferences(taskConfigurations: list<ITaskConfigu
 let private createTaskChain(taskConfigurations: list<ITaskConfiguration>): list<ITaskConfiguration> =
     checkForMultipleTaskReferences taskConfigurations
     let startTasks: list<ITaskConfiguration> =
-        List.filter(fun(taskConf: ITaskConfiguration) -> not(taskConf :? IConsumerTaskConfiguration)) taskConfigurations
+        List.filter(fun(taskConf: ITaskConfiguration) -> taskConf :? ReadConfiguration || (taskConf :? IConsumerTaskConfiguration && (taskConf :?> IConsumerTaskConfiguration).PreviousTask.IsNone)) taskConfigurations
     if List.length startTasks <> 1 then
         raise(new ConfigurationException("There must be exactly one task that is used as first task in a workflow"))
     let rec distributeRemainingTasks(remainingTasks: list<ITaskConfiguration>) (taskChain: list<ITaskConfiguration>): list<ITaskConfiguration> =
@@ -32,8 +32,8 @@ let private createTaskChain(taskConfigurations: list<ITaskConfiguration>): list<
                     conf :? IConsumerTaskConfiguration && (conf :?> IConsumerTaskConfiguration).PreviousTask.IsSome && (conf :?> IConsumerTaskConfiguration).PreviousTask.Value = lastName) remainingTasks
             if List.length nextTasks <> 1 then
                 raise(new ConfigurationException("The task \"" + lastName + "\" requires exactly one successor task, but found: " + (List.length nextTasks).ToString()))
-            distributeRemainingTasks (Remove (List.head nextTasks) remainingTasks) (taskChain @ nextTasks)
-    distributeRemainingTasks (Remove (List.head startTasks) taskConfigurations) startTasks
+            distributeRemainingTasks (Remove [(List.head nextTasks)] remainingTasks) (taskChain @ nextTasks)
+    distributeRemainingTasks (Remove [(List.head startTasks)] taskConfigurations) startTasks
 
 /// <summary>Models a workflow consisting of several tasks.
 /// After the workflow was instantiated and all tasks were
@@ -41,7 +41,7 @@ let private createTaskChain(taskConfigurations: list<ITaskConfiguration>): list<
 /// can be requested.</summary>
 type public Workflow(configuration: WorkflowConfiguration) =
     let mutable result: option<Lines> = None
-    let mutable input: option<list<Lines>> = None
+    let mutable input: option<Lines> = None
     new(configFile: string, workflowName: string) = Workflow(WorkflowConfiguration.Parse(configFile, workflowName))
 
     /// <summary>Can be called explecitly to run all tasks of this workflow.</summary>
@@ -54,15 +54,19 @@ type public Workflow(configuration: WorkflowConfiguration) =
                     if not(current :? IConsumerTask) then
                         raise(new WorkflowException("The task \"" + current.TaskName + "\" is used as a consumer task but not declared as such"))
                     (current :?> IConsumerTask).Input <- (prev.Value :?> IGeneratorTask).Output
+                elif prev.IsNone && input.IsSome && not(current :? IConsumerTask) then
+                    raise(new WorkflowException("The task \"" + current.TaskName + "\" is used as a consumer task but not declared as such"))
+                elif prev.IsNone && input.IsSome && current :? IConsumerTask then
+                    (current :?> IConsumerTask).Input <- input.Value
                 Some current) None this.TaskChain
         if lastTask.IsSome && lastTask.Value :? IGeneratorTask then
             result <- Some((lastTask.Value :?> IGeneratorTask).Output)
 
     /// <summary>Returns the final result of this workflow. If there is no result,
     /// e.g. the last task is a WriterTask, the result is none.</summary>
-    member public this.Output = if result.IsNone then
-                                    this.ProcessTasks()
-                                result
+    member public this.Output: option<Lines> = if result.IsNone then
+                                                 this.ProcessTasks()
+                                               result
 
     /// <summary>Instantiates all tasks defined by the passed workflow configuration.</summary>
     member private this.TaskChain: list<ITask> =
@@ -89,11 +93,17 @@ type public Workflow(configuration: WorkflowConfiguration) =
     /// property is set.</summary>
     member public this.Input with set(value: list<Lines>) = if input.IsSome then
                                                                 raise(new PropertyAlreadySetException("The property Input can be set only ones"))
-                                                            input <- Some value
+                                                            input <- Some(MergeLines value)
                                                             this.ProcessTasks()
+
+/// <summary>A typedef for a list of workflows.</summary>
+type public Workflows = list<Workflow>
+
+/// <summary>a typedef for a list of lists ofr workflows.</summary>
+type public WorkflowChain = list<list<Workflow>>
 
 /// <summary>Returns a list of Workflow instances corresponding to the
 /// configuration file described by the passed file path.</summary>
-let public GetWorkflows(configFilePath: string): list<Workflow> =
+let public GetWorkflows(configFilePath: string): Workflows =
     WorkflowConfiguration.Parse configFilePath
     |> List.map(fun(conf: WorkflowConfiguration) -> new Workflow(conf))

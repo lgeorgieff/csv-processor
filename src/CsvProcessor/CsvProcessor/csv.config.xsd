@@ -99,7 +99,7 @@
       column-mappings attirbute as a reference to a column-definition-mappings element
       that defines the order and names of the generated columns.</xs:documentation>
     </xs:annotation>
-    <xs:sequence>
+    <xs:all>
       <xs:element name="file">
         <xs:complexType>
           <xs:attribute name="path" type="xs:string" use="required" />
@@ -135,7 +135,7 @@
           <xs:attribute name="value" type="xs:boolean" use="required"/>
         </xs:complexType>
       </xs:element>
-    </xs:sequence>
+    </xs:all>
     <xs:attribute name="name" type="xs:ID" use="required" />
   </xs:complexType>
 
@@ -154,7 +154,7 @@
         string representing the task name in the optional attribute previous task.
       </xs:documentation>
     </xs:annotation>
-    <xs:sequence>      
+    <xs:all>      
       <xs:element name="file" maxOccurs="1" minOccurs="0">
         <xs:complexType>
           <xs:attribute name="path" type="xs:string" use="required" />
@@ -176,7 +176,7 @@
           <xs:attribute name="char" type="tns:character-type" use="required" />
         </xs:complexType>
       </xs:element>
-    </xs:sequence>
+    </xs:all>
     <xs:attribute name="name" type="xs:ID" use="required" />
     <xs:attribute name="column-mappings" type="xs:IDREF" use="required"/>
     <xs:attribute name="previous-task" type="xs:IDREF" use="optional" />
