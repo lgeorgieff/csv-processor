@@ -63,6 +63,8 @@ type public Workflow(configuration: WorkflowConfiguration) =
                     Some current) None this.TaskChain
             if lastTask.IsSome && lastTask.Value :? IGeneratorTask then
                 result <- Some((lastTask.Value :?> IGeneratorTask).Output)
+            else
+                result <- Some([])
 
     /// <summary>Returns the final result of this workflow. If there is no result,
     /// e.g. the last task is a WriterTask, the result is none.</summary>
