@@ -102,9 +102,9 @@ type public Writer(configuration: WriteConfiguration) =
             List.filter(fun(cell: ICell) ->
                 List.exists(fun(mapping: ColumnMapping) ->
                         mapping.Source.Name = cell.Name) columnMappings) line
-                |> List.sortBy(fun(cell: ICell) ->
-                    (List.find(fun(mapping: ColumnMapping) ->
-                        mapping.Source.Name = cell.Name) columnMappings).Target.Index)
+            |> List.sortBy(fun(cell: ICell) ->
+                (List.find(fun(mapping: ColumnMapping) ->
+                    mapping.Source.Name = cell.Name) columnMappings).Target.Index)
         Writer.Stringfy(constructtedLine, split, quote, metaQuote, trimWhitespaceStart, trimWhitespaceEnd)
 
     /// <summary>Returns a string representing the passed instance of Line. All arguments, such as
