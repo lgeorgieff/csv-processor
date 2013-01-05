@@ -42,41 +42,48 @@ let private createTaskChain(taskConfigurations: list<ITaskConfiguration>): list<
 type public Workflow(configuration: WorkflowConfiguration) =
     let mutable result: option<Lines> = None
     let mutable input: option<Lines> = None
+    let mutable taskChain: option<list<ITask>> = None
     new(configFile: string, workflowName: string) = Workflow(WorkflowConfiguration.Parse(configFile, workflowName))
 
     /// <summary>Can be called explecitly to run all tasks of this workflow.</summary>
     member public this.ProcessTasks(): Unit =
-        let lastTask: option<ITask> = 
-            List.fold(fun(prev: option<ITask>) (current: ITask) ->
-                if prev.IsSome then
-                    if not((prev.Value) :? IGeneratorTask) then
-                        raise(new WorkflowException("The task \"" + prev.Value.TaskName + "\" is used as a generator task but not declared as such"))
-                    if not(current :? IConsumerTask) then
+        if result.IsNone then
+            let lastTask: option<ITask> = 
+                List.fold(fun(prev: option<ITask>) (current: ITask) ->
+                    if prev.IsSome then
+                        if not((prev.Value) :? IGeneratorTask) then
+                            raise(new WorkflowException("The task \"" + prev.Value.TaskName + "\" is used as a generator task but not declared as such"))
+                        if not(current :? IConsumerTask) then
+                            raise(new WorkflowException("The task \"" + current.TaskName + "\" is used as a consumer task but not declared as such"))
+                        (current :?> IConsumerTask).Input <- (prev.Value :?> IGeneratorTask).Output
+                    elif prev.IsNone && input.IsSome && not(current :? IConsumerTask) then
                         raise(new WorkflowException("The task \"" + current.TaskName + "\" is used as a consumer task but not declared as such"))
-                    (current :?> IConsumerTask).Input <- (prev.Value :?> IGeneratorTask).Output
-                elif prev.IsNone && input.IsSome && not(current :? IConsumerTask) then
-                    raise(new WorkflowException("The task \"" + current.TaskName + "\" is used as a consumer task but not declared as such"))
-                elif prev.IsNone && input.IsSome && current :? IConsumerTask then
-                    (current :?> IConsumerTask).Input <- input.Value
-                Some current) None this.TaskChain
-        if lastTask.IsSome && lastTask.Value :? IGeneratorTask then
-            result <- Some((lastTask.Value :?> IGeneratorTask).Output)
+                    elif prev.IsNone && input.IsSome && current :? IConsumerTask then
+                        (current :?> IConsumerTask).Input <- input.Value
+                    Some current) None this.TaskChain
+            if lastTask.IsSome && lastTask.Value :? IGeneratorTask then
+                result <- Some((lastTask.Value :?> IGeneratorTask).Output)
 
     /// <summary>Returns the final result of this workflow. If there is no result,
     /// e.g. the last task is a WriterTask, the result is none.</summary>
-    member public this.Output: option<Lines> = if result.IsNone then
-                                                 this.ProcessTasks()
+    member public this.Output: option<Lines> = this.ProcessTasks()
                                                result
 
     /// <summary>Instantiates all tasks defined by the passed workflow configuration.</summary>
     member private this.TaskChain: list<ITask> =
-        createTaskChain (configuration.Workflow)
-        |> List.map(fun(conf: ITaskConfiguration) ->
-            match conf with
-                | :? WriteConfiguration -> new Writer(conf :?> WriteConfiguration) :> ITask
-                | :? ReadConfiguration -> new Reader(conf :?> ReadConfiguration, configuration.ColumnDefinitions) :> ITask
-                | :? GenericTaskConfiguration -> new GenericTask(conf :?> GenericTaskConfiguration) :> ITask
-                | _ -> raise(new WorkflowException("The workflow does not support configurations of the type: " + conf.GetType().ToString())))
+        if taskChain.IsSome then
+            taskChain.Value
+        else
+            taskChain <-
+                createTaskChain (configuration.Workflow)
+                |> List.map(fun(conf: ITaskConfiguration) ->
+                    match conf with
+                        | :? WriteConfiguration -> new Writer(conf :?> WriteConfiguration) :> ITask
+                        | :? ReadConfiguration -> new Reader(conf :?> ReadConfiguration, configuration.ColumnDefinitions) :> ITask
+                        | :? GenericTaskConfiguration -> new GenericTask(conf :?> GenericTaskConfiguration) :> ITask
+                        | _ -> raise(new WorkflowException("The workflow does not support configurations of the type: " + conf.GetType().ToString())))
+                |> Some
+            taskChain.Value
 
     /// <summary>Returns the workflow configuration that this workflow
     /// instance depends on</summary>
