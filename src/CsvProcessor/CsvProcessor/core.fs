@@ -316,7 +316,7 @@ module public Utilities =
                 try
                     List.zip(List.FilterEachSecond indexesOfQuotes true)(List.FilterEachSecond indexesOfQuotes false)
                 with
-                    | _ as err -> raise(new Exceptions.ParseException("An odd amount of quotations found, so a closing quotation is missing", err))
+                    | _ as err -> raise(new Exceptions.ParseException("The line \"" + str + "\" cotnains an odd amount of quotations, so a closing quotation is missing", err))
             if quoteRanges = [] then
                 indexesOfWhat
             else
@@ -566,7 +566,7 @@ module public Model =
             with
                 | :? System.Collections.Generic.KeyNotFoundException as err -> raise(new Exceptions.GenericOperationException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!", err))
         else
-            raise(new Exceptions.GenericOperationException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!"))
+            raise(new Exceptions.WorkflowException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!"))
 
     /// <summary>A helper function for the funtion mergeListOfLines that merges
     /// two instances of Lines to a single instance of the type Lines if the column
@@ -588,7 +588,7 @@ module public Model =
                     |> List.filter(fun(line: Line) -> not(IsHeaderLine line true))
                 existingLines @ sortedLines
             else
-                raise(new Exceptions.GenericOperationException("The lines " + newLines.ToString() + " cannot be merged with the lines " + existingLines.ToString() + " because the column defintions do not match:\n" + Utilities.List.ListToString colNames_1 + "\n" + Utilities.List.ListToString colNames_2))
+                raise(new Exceptions.WorkflowException("The lines " + newLines.ToString() + " cannot be merged with the lines " + existingLines.ToString() + " because the column defintions do not match:\n" + Utilities.List.ListToString colNames_1 + "\n" + Utilities.List.ListToString colNames_2))
             
 
     /// <summary>A helper function for MergeLines that recursivel merges the passed list
