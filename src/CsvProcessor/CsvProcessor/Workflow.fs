@@ -98,12 +98,10 @@ type public Workflow(configuration: WorkflowConfiguration) =
     member public this.PreviousWorkflows: list<string> = configuration.PreviousWorkflows
 
     /// <summary>Realizes a setter that takes the input data of a previous workflows to be processed
-    /// by this workflow. The processing of the input data is directly started when the 
-    /// property is set.</summary>
+    /// by this workflow.</summary>
     member public this.Input with set(value: list<Lines>) = if input.IsSome then
                                                                 raise(new PropertyAlreadySetException("The property Input can be set only ones"))
                                                             input <- Some(MergeLines value)
-                                                            this.ProcessTasks()
 
 /// <summary>A typedef for a list of workflows.</summary>
 type public Workflows = list<Workflow>
