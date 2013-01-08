@@ -507,11 +507,13 @@ module public Model =
 
     /// <summary>Represents a column definition made of a column name and
     /// its position/index in a line.</summary>
-    type public ColumnDefinition = { Name: string; Index: int }
+    type public ColumnDefinition = { Name: string; Index: int } with
+        override this.ToString(): string = "{ColumnDefinition.Name=\"" + this.Name + "; ColumnDefinition.Index=\"" + this.Index.ToString() + "\"}"
 
     /// <summary>Realizes a column mapping of a source column and a
     /// target columm. Each column is referenced via its ColumnDefinition name.</summary>
-    type public  ColumnMapping = { Source: ColumnDefinition; Target: ColumnDefinition }
+    type public  ColumnMapping = { Source: ColumnDefinition; Target: ColumnDefinition } with
+        override this.ToString(): string = "{ColumnMapping.Source=\"" + this.Source.ToString() + "; ColumnMapping.Target=\"" + this.Target.ToString() + "\"}"
 
     /// <summary>Realizes a list of column mappings of a source column and a
     /// target columm. Each column is referenced via its ColumnDefinition name.</summary>
@@ -531,6 +533,7 @@ module public Model =
         interface ICell with
             member this.Value: string = this.Value
             member this.Name: string = this.Name
+        override this.ToString(): string = "{Cell.Name=\"" + this.Name + "; Cell.Value=\"" + this.Value + "\"}"
 
     /// <summary>Represents a single header cell of a CVS file.
     /// Name: contains the name of the column this cell belongs to
@@ -540,6 +543,7 @@ module public Model =
         interface ICell with
             member this.Value: string = this.Value
             member this.Name: string = this.Name
+        override this.ToString(): string = "{HeaderCell.Name=\"" + this.Name + "; HeaderCell.Value=\"" + this.Value + "\"}"
 
     /// <summary>A typedef for a list of Cells representing a line.</summary>
     type public Line = list<ICell>
@@ -554,6 +558,35 @@ module public Model =
 
     /// <summary>A typedef for a list of Lines (list of lists of Cells) representing an entire CSV file.</summary>
     type public Lines = list<Line>
+
+    /// <summary>Raises a ParseException when the passed line does not correspond to the passed
+    /// column definitions. If "orderSensitive" is set to true, the order of the cells must
+    /// be equa to the order of the column definitions, otherwise the order does not care.</summary>
+    let public CheckLineForColumnDefinitions(line: Line)(columnDefinitions: list<ColumnDefinition>)(orderSensitive: bool): unit =
+        if line.Length <> columnDefinitions.Length then
+            raise(new Exceptions.ParseException("The line " + (Utilities.List.ListToString line) + " does not the amount of cells corresponding to the given column definitions " + (Utilities.List.ListToString columnDefinitions)))
+        if orderSensitive then
+            List.zip line columnDefinitions
+            |> List.iter(fun((cell: ICell), (colDef: ColumnDefinition)) ->
+                if colDef.Name <> cell.Name then
+                    raise(new Exceptions.ParseException("The cell \"" + cell.Name +  "\" does not match the column definition \"" + colDef.Name + "\"\nLine: " + (Utilities.List.ListToString line) + "\nColumn definitions: " + (Utilities.List.ListToString columnDefinitions))))
+        else
+            let cells: list<ICell> =
+                List.filter(fun(cell: ICell) -> 
+                    not(List.exists(fun(colDef: ColumnDefinition) -> colDef.Name = cell.Name) columnDefinitions)) line
+            if cells.Length <> 0 then
+                raise(new Exceptions.ParseException("No column definitions available for the following cells " + (Utilities.List.ListToString cells) + "\nLine: " + (Utilities.List.ListToString line) + "\nColumn definitions: " + (Utilities.List.ListToString columnDefinitions)))
+            let colDefs: list<ColumnDefinition> =
+                List.filter(fun(colDef: ColumnDefinition) ->
+                    not(List.exists(fun(cell: ICell) -> colDef.Name = cell.Name) line)) columnDefinitions
+            if colDefs.Length <> 0 then
+                raise(new Exceptions.ParseException("No cells available for the following columnd definitions " + (Utilities.List.ListToString colDefs) + "\nLine: " + (Utilities.List.ListToString line) + "\nColumn definitions: " + (Utilities.List.ListToString columnDefinitions)))
+
+    /// <summary>Raises a ParseException when one of the passed lines does not correspond to the
+    /// passed column definitions. If "orderSensitive" is set to true, the order of the cells must
+    /// be equa to the order of the column definitions, otherwise the order does not care.</summary>
+    let public CheckLinesForColumnDefinitions(lines: Lines)(columnDefinitions: list<ColumnDefinition>) (orderSensitive: bool): unit =
+        List.iter(fun(line: Line) -> CheckLineForColumnDefinitions line columnDefinitions orderSensitive) lines
 
     /// <summary>Sorts the cells in the passed line corresponding to the
     /// passed column defintions which actually are names of the cells.

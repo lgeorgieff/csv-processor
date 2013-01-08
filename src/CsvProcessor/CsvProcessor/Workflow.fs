@@ -98,10 +98,14 @@ type public Workflow(configuration: WorkflowConfiguration) =
     member public this.PreviousWorkflows: list<string> = configuration.PreviousWorkflows
 
     /// <summary>Realizes a setter that takes the input data of a previous workflows to be processed
-    /// by this workflow.</summary>
+    /// by this workflow.
+    /// Note: the passed values must all correspond to the column definitions, whereas the
+    /// order does not care</summary>
     member public this.Input with set(value: list<Lines>) = if input.IsSome then
                                                                 raise(new PropertyAlreadySetException("The property Input can be set only ones"))
-                                                            input <- Some(MergeLines value)
+                                                            let mergedLines: Lines = MergeLines value
+                                                            CheckLinesForColumnDefinitions mergedLines configuration.ColumnDefinitions false
+                                                            input <- Some mergedLines
 
 /// <summary>A typedef for a list of workflows.</summary>
 type public Workflows = list<Workflow>
