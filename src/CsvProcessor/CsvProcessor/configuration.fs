@@ -228,10 +228,16 @@ let private getColumnDefinitions(workflow: XmlNode) (xnsm: XmlNamespaceManager):
         let columnDefitionsNodes: XmlNodeList = (getCsvJob workflow xnsm).SelectNodes("/" + CONFIG_NAMESPACE_PREFIX + ":csv-job/" + CONFIG_NAMESPACE_PREFIX + ":column-definitions[@name='" + defName + "']", xnsm)
         if columnDefitionsNodes.Count <> 1 then
             raise(new ConfigurationException("The element \"column-definitions\" with the attribute \"name\" set to the value \"" + defName + "\" must be existent exactly once, but is: " + columnDefitionsNodes.Count.ToString()))
-        columnDefitionsNodes.[0].SelectNodes(XPATH_COLUMN_DEFINITIONS_NAMES, xnsm)
-        |> MapXmlNodeList(fun(node: XmlNode) -> node.Value)
+        columnDefitionsNodes.[0].SelectNodes(XPATH_COLUMNS_FROM_COLUMN_DEFINITIONS, xnsm)
+        |> MapXmlNodeList(fun(node: XmlNode) -> node.SelectSingleNode("@name"), node.SelectSingleNode("@from"))
         |> AddIndexes
-        |> List.map(fun((name: string), (index: int)) -> { ColumnDefinition.Name = name; ColumnDefinition.Index = index })
+        |> List.map(fun(((name: XmlNode), (from: XmlNode)), (index: int)) ->
+            let nameValue: string = if name = null then
+                                        raise(new ParseException("The attribute \"name\" is missing from a column defintion!"))
+                                    else
+                                        name.Value
+            let fromValue: string = if from = null then nameValue else from.Value
+            { ColumnDefinition.Name = nameValue; ColumnDefinition.From = fromValue; ColumnDefinition.Index = index })
     with
     | _ as err -> raise(new ConfigurationException("The column-definitions could not be parsed", err))
 
@@ -251,9 +257,11 @@ let private getColumnMappings(ownerNode: XmlNode) (xnsm: XmlNamespaceManager): C
         |> List.map(fun(((sourceName: string), (targetName: string)), (index: int)) ->
             { ColumnMapping.Source = { ColumnDefinition.Name = sourceName
                                        ColumnDefinition.Index = index
+                                       ColumnDefinition.From = sourceName
                                      }
               ColumnMapping.Target = { ColumnDefinition.Name = targetName
                                        ColumnDefinition.Index = index
+                                       ColumnDefinition.From = targetName
                                      }
             })
     with

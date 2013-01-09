@@ -1,30 +1,30 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <csv-job xmlns="http://ztt.fh-worms.de/georgieff/csv/">
   <column-definitions name="col-defs">
-    <column name="unit id"/>
-    <column name="created at"/>
-    <column name="golden"/>
-    <column name="id"/>
-    <column name="missed"/>
-    <column name="started at"/>
-    <column name="tainted"/>
-    <column name="channel"/>
-    <column name="trust"/>
-    <column name="worker id"/>
-    <column name="country"/>
-    <column name="region"/>
-    <column name="city"/>
-    <column name="ip"/>
-    <column name="how difficult was the assertion to decide on"/>
-    <column name="your choice"/>
-    <column name="annotated sentence"/>
-    <column name="file"/>
-    <column name="line"/>
-    <column name="pattern"/>
-    <column name="unannotated sentence"/>
-    <column name="x"/>
-    <column name="your coice gold"/>
-    <column name="ys"/>
+    <column name="unit id" from="_unit_id"/>
+    <column name="created at" from="_created_at"/>
+    <column name="golden" from="_golden"/>
+    <column name="id" from="_id"/>
+    <column name="missed" from="_missed"/>
+    <column name="started at" from="_started_at"/>
+    <column name="tainted" from="_tainted"/>
+    <column name="channel" from="_channel"/>
+    <column name="trust" from="_trust"/>
+    <column name="worker id" from="_worker_id"/>
+    <column name="country" from="_country"/>
+    <column name="region" from="_region"/>
+    <column name="city" from="_city"/>
+    <column name="ip" from="_ip"/>
+    <column name="how difficult was the assertion to decide on" from="how_difficult_was_the_assertion_to_decide_on"/>
+    <column name="your choice" from="your_choice"/>
+    <column name="annotated sentence" from="annotated_sentence"/>
+    <column name="file" from="file"/>
+    <column name="line" from="line"/>
+    <column name="pattern" from="pattern"/>
+    <column name="unannotated sentence" from="unannotated_sentence"/>
+    <column name="x" from="x"/>
+    <column name="your coice gold" from="your_choice_gold"/>
+    <column name="ys" from="ys"/>
   </column-definitions>
 
   <column-mappings name="final-columns">

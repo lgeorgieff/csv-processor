@@ -8,6 +8,7 @@ open CSV.Core.Model
 open CSV.Core.Utilities
 open CSV.Core.Exceptions
 open CSV.Core.Utilities.String
+open CSV.Core.Utilities.List
 
 /// <summary>Implements the Read task and reads and splits a CVS file into memory.
 /// The result can be requested by calling the getter Output</summary>
@@ -51,12 +52,22 @@ type public Reader(configuration: ReadConfiguration, columnDefinitions: list<Col
     do
         self.ReadFile()
 
+    member private this.CheckHeaderLine(headerLine: string): unit =
+        let header: Line =
+            lineProcessor headerLine
+            |> List.map(fun(cell: ICell) -> {HeaderCell.Value = cell.Value; HeaderCell.Name = cell.Name } :> ICell)
+        List.zip header columnDefinitions
+        |> List.iter(fun((cell: ICell), (colDef: ColumnDefinition)) ->
+            if cell.Value <> colDef.From then
+                raise(new ParseException("The header column value \"" + cell.Value + "\" does not match the column definition value \"" + colDef.From + "\"\nLine: " + (ListToString header) + "\nColumn definitions: " + (ListToString columnDefinitions))))
+
     member private this.ReadFile(): Unit =
         let linesOfFileWithoutHeader: list<string> =
             let tmp: list<string> = File.ReadAllLines(configuration.FilePath) |> List.ofArray
             if tmp.Length = 0 then
                 tmp
             else
+                this.CheckHeaderLine tmp.Head
                 List.tail tmp
         output <-
             (try

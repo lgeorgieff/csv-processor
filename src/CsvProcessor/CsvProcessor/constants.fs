@@ -46,9 +46,9 @@ let public XPATH_GENERIC_TASKS: string = CONFIG_NAMESPACE_PREFIX + ":generic-tas
 /// of a workflow element.</summary>
 let public XPATH_TASKS: string = XPATH_GENERIC_TASKS + " | " + XPATH_READ_TASKS + " | " + XPATH_WRITE_TASKS
 
-/// <summary>The XPATH expression for getting all name attributes from the
-/// column-definitions children of a csv-job element.</summary>
-let public XPATH_COLUMN_DEFINITIONS_NAMES: string = CONFIG_NAMESPACE_PREFIX + ":column/@name"
+/// <summary>The XPATH expression for getting all column elements of a
+/// column-definitions element.</summary>
+let public XPATH_COLUMNS_FROM_COLUMN_DEFINITIONS: string = CONFIG_NAMESPACE_PREFIX + ":column"
 
 /// <summary>The XPATH expression for getting the value attribute of a read-multi-line
 /// element of a read task.</summary>

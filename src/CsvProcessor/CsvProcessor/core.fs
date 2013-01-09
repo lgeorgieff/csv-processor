@@ -489,6 +489,8 @@ module public Utilities =
                     this
 
 module public Model =
+    open Utilities.List
+
     /// <summary>The basic Interface for task configurations.<summary>
     type public ITaskConfiguration =
         abstract member TaskName: string with get
@@ -507,8 +509,8 @@ module public Model =
 
     /// <summary>Represents a column definition made of a column name and
     /// its position/index in a line.</summary>
-    type public ColumnDefinition = { Name: string; Index: int } with
-        override this.ToString(): string = "{ColumnDefinition.Name=\"" + this.Name + "; ColumnDefinition.Index=\"" + this.Index.ToString() + "\"}"
+    type public ColumnDefinition = { Name: string; From: string; Index: int } with
+        override this.ToString(): string = "{ColumnDefinition.Name=\"" + this.Name + "; ColumnDefinition.From=\"" + this.From + "; ColumnDefinition.Index=\"" + this.Index.ToString() + "\"}"
 
     /// <summary>Realizes a column mapping of a source column and a
     /// target columm. Each column is referenced via its ColumnDefinition name.</summary>
@@ -564,23 +566,23 @@ module public Model =
     /// be equa to the order of the column definitions, otherwise the order does not care.</summary>
     let public CheckLineForColumnDefinitions(line: Line)(columnDefinitions: list<ColumnDefinition>)(orderSensitive: bool): unit =
         if line.Length <> columnDefinitions.Length then
-            raise(new Exceptions.ParseException("The line " + (Utilities.List.ListToString line) + " does not the amount of cells corresponding to the given column definitions " + (Utilities.List.ListToString columnDefinitions)))
+            raise(new Exceptions.ParseException("The line " + (ListToString line) + " does not the amount of cells corresponding to the given column definitions " + (ListToString columnDefinitions)))
         if orderSensitive then
             List.zip line columnDefinitions
             |> List.iter(fun((cell: ICell), (colDef: ColumnDefinition)) ->
                 if colDef.Name <> cell.Name then
-                    raise(new Exceptions.ParseException("The cell \"" + cell.Name +  "\" does not match the column definition \"" + colDef.Name + "\"\nLine: " + (Utilities.List.ListToString line) + "\nColumn definitions: " + (Utilities.List.ListToString columnDefinitions))))
+                    raise(new Exceptions.ParseException("The cell \"" + cell.Name +  "\" does not match the column definition \"" + colDef.Name + "\"\nLine: " + (ListToString line) + "\nColumn definitions: " + (ListToString columnDefinitions))))
         else
             let cells: list<ICell> =
                 List.filter(fun(cell: ICell) -> 
                     not(List.exists(fun(colDef: ColumnDefinition) -> colDef.Name = cell.Name) columnDefinitions)) line
             if cells.Length <> 0 then
-                raise(new Exceptions.ParseException("No column definitions available for the following cells " + (Utilities.List.ListToString cells) + "\nLine: " + (Utilities.List.ListToString line) + "\nColumn definitions: " + (Utilities.List.ListToString columnDefinitions)))
+                raise(new Exceptions.ParseException("No column definitions available for the following cells " + (ListToString cells) + "\nLine: " + (ListToString line) + "\nColumn definitions: " + (ListToString columnDefinitions)))
             let colDefs: list<ColumnDefinition> =
                 List.filter(fun(colDef: ColumnDefinition) ->
                     not(List.exists(fun(cell: ICell) -> colDef.Name = cell.Name) line)) columnDefinitions
             if colDefs.Length <> 0 then
-                raise(new Exceptions.ParseException("No cells available for the following columnd definitions " + (Utilities.List.ListToString colDefs) + "\nLine: " + (Utilities.List.ListToString line) + "\nColumn definitions: " + (Utilities.List.ListToString columnDefinitions)))
+                raise(new Exceptions.ParseException("No cells available for the following columnd definitions " + (ListToString colDefs) + "\nLine: " + (ListToString line) + "\nColumn definitions: " + (ListToString columnDefinitions)))
 
     /// <summary>Raises a ParseException when one of the passed lines does not correspond to the
     /// passed column definitions. If "orderSensitive" is set to true, the order of the cells must
@@ -597,9 +599,9 @@ module public Model =
             try
                 List.map(fun(colDef: string) -> List.find(fun(cell: ICell) -> cell.Name = colDef) line) columnDefinitions
             with
-                | :? System.Collections.Generic.KeyNotFoundException as err -> raise(new Exceptions.GenericOperationException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!", err))
+                | :? System.Collections.Generic.KeyNotFoundException as err -> raise(new Exceptions.GenericOperationException("the column defintions " + ListToString columnDefinitions + " and the passed line " + ListToString line + " does not match!", err))
         else
-            raise(new Exceptions.WorkflowException("the column defintions " + Utilities.List.ListToString columnDefinitions + " and the passed line " + Utilities.List.ListToString line + " does not match!"))
+            raise(new Exceptions.WorkflowException("the column defintions " + ListToString columnDefinitions + " and the passed line " + ListToString line + " does not match!"))
 
     /// <summary>A helper function for the funtion mergeListOfLines that merges
     /// two instances of Lines to a single instance of the type Lines if the column
@@ -621,7 +623,7 @@ module public Model =
                     |> List.filter(fun(line: Line) -> not(IsHeaderLine line true))
                 existingLines @ sortedLines
             else
-                raise(new Exceptions.WorkflowException("The lines " + newLines.ToString() + " cannot be merged with the lines " + existingLines.ToString() + " because the column defintions do not match:\n" + Utilities.List.ListToString colNames_1 + "\n" + Utilities.List.ListToString colNames_2))
+                raise(new Exceptions.WorkflowException("The lines " + newLines.ToString() + " cannot be merged with the lines " + existingLines.ToString() + " because the column defintions do not match:\n" + ListToString colNames_1 + "\n" + ListToString colNames_2))
             
 
     /// <summary>A helper function for MergeLines that recursivel merges the passed list

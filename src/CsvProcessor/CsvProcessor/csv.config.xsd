@@ -82,7 +82,19 @@
           <xs:documentation>Represents a single column where the attribute name defines the name of the final column cells that are used in the application. The order of column elements must coresponds to the order of the columns in the parsed file. Nevertheless, the header line of the parsed files is not checked for the same header names.</xs:documentation>
         </xs:annotation>
         <xs:complexType>
-          <xs:attribute name="name" type="xs:string" use="required" />
+          <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+              <xs:documentation>This value will be the actual name of the parsed column.</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="from" type="xs:string" use="optional">
+            <xs:annotation>
+              <xs:documentation>This value is only used when a reader is in a workflow that uses this
+              column definition element. If this attribute is available the reader checks its value with
+              the column header name of the parsed file. If this value is non-existent the reader
+            checks the file's column header name with the value of the attribute "name".</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
         </xs:complexType>
       </xs:element>
     </xs:sequence>
