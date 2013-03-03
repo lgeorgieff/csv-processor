@@ -260,6 +260,7 @@ module public Utilities =
             doc.Load(xmlFilePath)
             let schema: XmlSchema = XmlSchema.Read(DotNet.GetXmlSchemaStream(), validationEventHandler)
             doc.Schemas.Add(schema) |> ignore
+            doc.Validate(new ValidationEventHandler(validationEventHandler))
             (doc, xnsm)
 
     module public String =
